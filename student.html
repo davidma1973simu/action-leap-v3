@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Action Leap · 学员填写</title>
+<link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+<div class="topbar">
+  <div class="brand"><span class="dot"></span>Action Leap<small>课后学习迁移 · 学员填写</small></div>
+</div>
+
+<div class="wrap">
+  <section id="view-err" class="hidden">
+    <div class="card"><div class="empty" id="errMsg">链接无效或已失效。</div></div>
+  </section>
+
+  <section id="view-main" class="hidden">
+    <div class="hero">
+      <div class="eyebrow" id="hClient">课程</div>
+      <h1 id="hTitle">课后迁移表</h1>
+      <p id="hStudent"></p>
+    </div>
+
+    <div class="card">
+      <div class="eyebrow">怎么填（约 5 分钟）</div>
+      <p class="meta">这张表是从你上课的内容里抽出的「要真正用起来的行动」。每行只需补两栏：<b>结果影响</b> 和 <b>实际值</b>（有量化目标的才填实际值）。困难、未来应用可选填。全部填完才能提交；上司会据此给你反馈。</p>
+    </div>
+
+    <div class="card">
+      <div class="eyebrow">我的迁移表</div>
+      <div id="fillBody"></div>
+      <div id="fillErr" class="error"></div>
+      <div style="display:flex;gap:10px;margin-top:14px;flex-wrap:wrap">
+        <button class="btn" id="btnSubmit">提交迁移</button>
+        <button class="btn ghost" id="btnSave">保存草稿</button>
+      </div>
+      <div id="doneBox" class="note hidden"></div>
+    </div>
+  </section>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/@tencent-ai/workbuddy-cloud-sdk@dev/lib/index.global.js"></script>
+<script src="publicConfig.js"></script>
+<script src="cloud-core.js"></script>
+<script>
+(function () {
+  'use strict';
+  var A = window.ALC;
+  if (typeof WorkBuddyCloud === 'undefined') { showErr('云服务 SDK 加载失败，请刷新重试。'); return; }
+  A.init();
+
+  var BASE = location.origin + location.pathname.replace(/[^/]*$/, '');
+  var q = new URLSearchParams(location.search);
+  var pid = q.get('pid'), tok = q.get('tok');
+  var data = null;        // get_project_for_student 返回
+  var rows = [];          // 学员填写：{id, resultImpact, quantActual, difficulty, futureApplication}
+  var saved = null;       // 已存在的提交
+
+  function $(id) { return document.getElementById(id); }
+  function showErr(m) { $('errMsg').textContent = m; $('view-err').classList.remove('hidden'); }
+  function toast(m) { var t = $('toast'); t.textContent = m; t.classList.add('show'); clearTimeout(toast._t); toast._t = setTimeout(function(){ t.classList.remove('show'); }, 2200); }
+
+  if (!pid || !tok) { showErr('链接缺少必要参数。'); return; }
+
+  A.getProjectForStudent(pid, tok).then(function (r) {
+    if (!r || !r.ok) { showErr('链接无效或已失效（' + ((r && r.error) || '未知') + '）。'); return; }
+    data = r;
+    buildRows();
+    buildExisting(r.submission);
+    render();
+    $('view-main').classList.remove('hidden');
+  }).catch(function (e) { showErr('加载失败：' + (e.message || e)); });
+
+  function buildRows() {
+    var fw = (data.framework || []);
+    rows = fw.map(function (a) {
+      return { id: a.id, section: a.section, scene: a.scene, action: a.action,
+        baseline: a.baseline, target: a.target, unit: a.unit, direction: a.direction, note: a.note,
+        resultImpact: '', quantActual: '', difficulty: '', futureApplication: '' };
+    });
+  }
+  function buildExisting(sub) {
+    if (!sub || !sub.rows) return;
+    sub.rows.forEach(function (s) {
+      var r = rows.find(function (x) { return x.id === s.id; });
+      if (r) { r.resultImpact = s.resultImpact || ''; r.quantActual = s.quantActual != null ? s.quantActual : ''; r.difficulty = s.difficulty || ''; r.futureApplication = s.futureApplication || ''; }
+    });
+  }
+
+  function render() {
+    $('hClient').textContent = (data.project.client || '') + ' · ' + (data.project.cohort || '');
+    $('hTitle').textContent = data.project.title || '课后迁移表';
+    $('hStudent').textContent = '学员：' + (data.student.name || '');
+
+    // 若此前已提交，展示已提交态（仍可编辑后重新提交更新）
+    var done = data.submission && data.submission.completed;
+    if (done) {
+      $('doneBox').classList.remove('hidden');
+      $('doneBox').innerHTML = '你已于 <b>' + A.esc(data.submission.submittedAt || '此前') + '</b> 提交本次迁移。可直接查看，或改完后再点「提交迁移」覆盖更新。';
+    }
+    var body = $('fillBody'); body.innerHTML = '';
+    rows.forEach(function (r, i) {
+      var quantified = r.target !== '' && r.target != null;
+      var hasBase = r.baseline !== '' && r.baseline != null;
+      var card = document.createElement('div'); card.className = 'fb';
+      var html = '<div class="who"><span class="pill">' + A.esc(r.section || '行动') + '</span> &nbsp;' + A.esc(r.action || '') + '</div>';
+      html += '<div class="meta">场景：' + A.esc(r.scene || '—') + '</div>';
+      if (quantified) {
+        html += '<div class="meta" style="margin-top:4px">量化目标：' + (hasBase ? A.esc(r.baseline) : '—') + ' → <b>' + A.esc(r.target) + '</b> ' + A.esc(r.unit || '') + '（' + (r.direction === 'down' ? '越低越好' : '越高越好') + '）· ' + A.esc(r.note || '') + '</div>';
+      }
+      html += '<label>结果影响（这一行你实际做到了什么 / 带来了什么改变？）</label>';
+      html += '<textarea data-i="' + i + '" data-f="resultImpact" rows="2" placeholder="用一两句话说清楚结果与影响">' + A.esc(r.resultImpact) + '</textarea>';
+      if (quantified) {
+        html += '<label>实际值（填数字）</label>';
+        html += '<input type="text" inputmode="decimal" data-i="' + i + '" data-f="quantActual" value="' + A.esc(r.quantActual) + '" placeholder="' + A.esc(r.target) + ' ' + A.esc(r.unit || '') + '">';
+      }
+      html += '<label>遇到的困难（可选）</label>';
+      html += '<textarea data-i="' + i + '" data-f="difficulty" rows="1" placeholder="执行中卡在哪？">' + A.esc(r.difficulty) + '</textarea>';
+      html += '<label>未来怎么继续用（可选）</label>';
+      html += '<textarea data-i="' + i + '" data-f="futureApplication" rows="1" placeholder="下次还会怎么用？">' + A.esc(r.futureApplication) + '</textarea>';
+      card.innerHTML = html;
+      body.appendChild(card);
+    });
+    body.querySelectorAll('textarea,input').forEach(function (inp) {
+      inp.addEventListener('input', function () {
+        var i = +inp.getAttribute('data-i'), f = inp.getAttribute('data-f');
+        rows[i][f] = inp.value;
+        $('fillErr').textContent = '';
+      });
+    });
+  }
+
+  function isComplete() {
+    var ok = true;
+    rows.forEach(function (r) {
+      if ((r.resultImpact || '').trim() === '') ok = false;
+      var q = r.target !== '' && r.target != null;
+      if (q && (r.quantActual === '' || r.quantActual == null)) ok = false;
+    });
+    return ok;
+  }
+
+  $('btnSave').addEventListener('click', function () { submit(false); });
+  $('btnSubmit').addEventListener('click', function () {
+    if (!isComplete()) { $('fillErr').textContent = '请先填完每一行的「结果影响」，以及有量化目标行的「实际值」。'; return; }
+    submit(true);
+  });
+
+  function submit(completed) {
+    A.saveSubmission(pid, tok, rows, completed).then(function (r) {
+      if (!r || !r.ok) { toast('保存失败：' + ((r && r.error) || '未知')); return; }
+      if (completed) {
+        $('doneBox').classList.remove('hidden');
+        $('doneBox').innerHTML = '✅ 已提交！你的直接上司会收到反馈邀请，讲师将在工作台看到你的迁移成果。感谢你的投入。';
+        $('btnSubmit').disabled = true; $('btnSave').disabled = true;
+        toast('提交成功');
+      } else { toast('草稿已保存'); }
+    }).catch(function (e) { toast('保存失败：' + (e.message || e)); });
+  }
+})();
+</script>
+</body>
+</html>

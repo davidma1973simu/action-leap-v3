@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Action Leap · 上司反馈</title>
+<link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+<div class="topbar">
+  <div class="brand"><span class="dot"></span>Action Leap<small>课后学习迁移 · 上司反馈</small></div>
+</div>
+
+<div class="wrap">
+  <section id="view-err" class="hidden">
+    <div class="card"><div class="empty" id="errMsg">链接无效或已失效。</div></div>
+  </section>
+
+  <section id="view-main" class="hidden">
+    <div class="hero">
+      <div class="eyebrow" id="hClient">课程</div>
+      <h1 id="hTitle">学员迁移成果反馈</h1>
+      <p id="hStudent"></p>
+    </div>
+
+    <div class="card">
+      <div class="eyebrow">学员已提交的迁移成果（只读）</div>
+      <div id="subBody"></div>
+      <div id="subEmpty" class="note hidden">学员尚未提交迁移表。你仍可提前填写反馈，提交后会与该学员成果一并呈现给讲师。</div>
+    </div>
+
+    <div class="card">
+      <div class="eyebrow">你的反馈（三段式 · 约 3 分钟）</div>
+      <p class="meta">这是「上司介入」环节：你的真实反馈是学员把课堂内容真正落到工作里的关键推力。只需三段——整体评语、给他的建议、你承诺的跟进。</p>
+
+      <label>① 整体评语（他这次迁移做得怎么样？）</label>
+      <textarea id="fOverall" rows="3" placeholder="例：他在跨部门协同上明显更主动了，值得肯定；量化目标里有两个还没达成，可能卡在资源上。"></textarea>
+
+      <label>② 给他的建议（至少 2 条，越具体越好）</label>
+      <div id="sugBox"></div>
+      <button class="btn ghost sm" id="btnAddSug" style="margin-top:6px">+ 再加一条建议</button>
+      <div id="sugErr" class="error"></div>
+
+      <label>③ 你承诺的跟进（你接下来会怎么支持他？）</label>
+      <textarea id="fCommit" rows="2" placeholder="例：下周一对齐一次 30 分钟复盘，帮他协调 X 资源；两周后看一次实际数据。"></textarea>
+
+      <div id="fbErr" class="error"></div>
+      <div style="display:flex;gap:10px;margin-top:14px;flex-wrap:wrap">
+        <button class="btn" id="btnSubmit">提交反馈</button>
+        <button class="btn ghost" id="btnSave">保存草稿</button>
+      </div>
+      <div id="doneBox" class="note hidden"></div>
+    </div>
+  </section>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/@tencent-ai/workbuddy-cloud-sdk@dev/lib/index.global.js"></script>
+<script src="publicConfig.js"></script>
+<script src="cloud-core.js"></script>
+<script>
+(function () {
+  'use strict';
+  var A = window.ALC;
+  if (typeof WorkBuddyCloud === 'undefined') { showErr('云服务 SDK 加载失败，请刷新重试。'); return; }
+  A.init();
+
+  var q = new URLSearchParams(location.search);
+  var pid = q.get('pid'), tok = q.get('tok'), suptok = q.get('suptok');
+  var data = null;
+  var suggestions = ['', ''];
+
+  function $(id) { return document.getElementById(id); }
+  function showErr(m) { $('errMsg').textContent = m; $('view-err').classList.remove('hidden'); }
+  function toast(m) { var t = $('toast'); t.textContent = m; t.classList.add('show'); clearTimeout(toast._t); toast._t = setTimeout(function(){ t.classList.remove('show'); }, 2200); }
+
+  if (!pid || !tok || !suptok) { showErr('链接缺少必要参数。'); return; }
+
+  A.getSubmissionForSup(pid, tok, suptok).then(function (r) {
+    if (!r || !r.ok) { showErr('链接无效或已失效（' + ((r && r.error) || '未知') + '）。'); return; }
+    data = r;
+    renderHeader();
+    renderSubmission();
+    prefillFeedback();
+    renderSuggestions();
+    $('view-main').classList.remove('hidden');
+  }).catch(function (e) { showErr('加载失败：' + (e.message || e)); });
+
+  function renderHeader() {
+    $('hClient').textContent = (data.project.client || '') + ' · ' + (data.project.cohort || '');
+    $('hTitle').textContent = data.project.title || '学员迁移成果反馈';
+    $('hStudent').textContent = '致 ' + (data.student.name || '学员') + ' 的直接上司';
+  }
+
+  function renderSubmission() {
+    var body = $('subBody'); body.innerHTML = '';
+    var fw = (data.framework || []);
+    var subs = (data.submission && data.submission.rows) || [];
+    if (!subs.length) { $('subEmpty').classList.remove('hidden'); return; }
+    $('subEmpty').classList.add('hidden');
+    fw.forEach(function (a) {
+      var s = subs.find(function (x) { return x.id === a.id; }) || {};
+      var quantified = a.target !== '' && a.target != null;
+      var card = document.createElement('div'); card.className = 'fb';
+      var html = '<div class="who"><span class="pill">' + A.esc(a.section || '行动') + '</span> &nbsp;' + A.esc(a.action || '') + '</div>';
+      html += '<div class="meta">场景：' + A.esc(a.scene || '—') + '</div>';
+      if (quantified) html += '<div class="meta" style="margin-top:4px">量化目标：' + A.esc(a.target) + ' ' + A.esc(a.unit || '') + '</div>';
+      html += '<div style="margin-top:6px"><b>结果影响：</b>' + A.esc(s.resultImpact || '（未填写）') + '</div>';
+      if (quantified) html += '<div class="meta">实际值：' + A.esc(s.quantActual != null ? s.quantActual : '—') + '</div>';
+      if (s.difficulty) html += '<div class="meta">困难：' + A.esc(s.difficulty) + '</div>';
+      if (s.futureApplication) html += '<div class="meta">未来应用：' + A.esc(s.futureApplication) + '</div>';
+      card.innerHTML = html;
+      body.appendChild(card);
+    });
+  }
+
+  function prefillFeedback() {
+    var fb = data.feedback;
+    if (!fb) return;
+    $('fOverall').value = fb.overall || '';
+    $('fCommit').value = fb.commitment || '';
+    if (fb.suggestions && fb.suggestions.length) suggestions = fb.suggestions.slice();
+    if (fb.overall || fb.commitment || (fb.suggestions && fb.suggestions.length)) {
+      $('doneBox').classList.remove('hidden');
+      $('doneBox').innerHTML = '检测到你此前已填写过反馈，已为你预填。可直接修改后重新提交覆盖。';
+    }
+  }
+
+  function renderSuggestions() {
+    var box = $('sugBox'); box.innerHTML = '';
+    suggestions.forEach(function (s, i) {
+      var d = document.createElement('div');
+      d.style.cssText = 'display:flex;gap:8px;margin:6px 0;align-items:flex-start';
+      d.innerHTML = '<textarea data-i="' + i + '" rows="2" style="flex:1" placeholder="例：把周报机制固化下来，让协同进展可见">' + A.esc(s) + '</textarea>' +
+        (suggestions.length > 1 ? '<button class="btn ghost sm" data-del="' + i + '">✕</button>' : '');
+      box.appendChild(d);
+    });
+    box.querySelectorAll('textarea').forEach(function (ta) {
+      ta.addEventListener('input', function () { suggestions[+ta.getAttribute('data-i')] = ta.value; $('sugErr').textContent = ''; });
+    });
+    box.querySelectorAll('[data-del]').forEach(function (b) {
+      b.addEventListener('click', function () { suggestions.splice(+b.getAttribute('data-del'), 1); renderSuggestions(); });
+    });
+  }
+  $('btnAddSug').addEventListener('click', function () { suggestions.push(''); renderSuggestions(); });
+
+  function collectSuggestions() { return suggestions.map(function (s) { return s.trim(); }).filter(function (s) { return s.length > 0; }); }
+
+  $('btnSave').addEventListener('click', function () { submit(false); });
+  $('btnSubmit').addEventListener('click', function () {
+    var overall = $('fOverall').value.trim();
+    var sugs = collectSuggestions();
+    var commit = $('fCommit').value.trim();
+    if (!overall) { $('fbErr').textContent = '请填写整体评语。'; return; }
+    if (sugs.length < 2) { $('sugErr').textContent = '请至少给出 2 条具体建议（已填 ' + sugs.length + ' 条）。'; return; }
+    if (!commit) { $('fbErr').textContent = '请填写你承诺的跟进。'; return; }
+    submit(true);
+  });
+
+  function submit(completed) {
+    var overall = $('fOverall').value.trim();
+    var sugs = collectSuggestions();
+    var commit = $('fCommit').value.trim();
+    A.saveSupFeedback(pid, tok, suptok, overall, sugs, commit).then(function (r) {
+      if (!r || !r.ok) { toast('保存失败：' + ((r && r.error) || '未知')); return; }
+      if (completed) {
+        $('doneBox').classList.remove('hidden');
+        $('doneBox').innerHTML = '✅ 反馈已提交！讲师会在工作台「评价固化」里看到你的评语、建议与承诺跟进。感谢你推动学员真正把所学用起来。';
+        $('btnSubmit').disabled = true; $('btnSave').disabled = true;
+        toast('反馈已提交');
+      } else { toast('草稿已保存'); }
+    }).catch(function (e) { toast('保存失败：' + (e.message || e)); });
+  }
+})();
+</script>
+</body>
+</html>

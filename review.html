@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Action Leap · 评价固化（创建者）</title>
+<link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+
+<div class="topbar" id="topbar">
+  <div class="brand"><span class="dot"></span>Action Leap<small>学习迁移 · 评价固化</small></div>
+  <div class="spacer"></div>
+  <span id="who" class="badge muted hidden"></span>
+  <button class="btn ghost sm hidden" id="btnLogout">退出</button>
+</div>
+
+<div class="wrap">
+
+  <section id="view-login" class="hidden">
+    <div class="card login-card">
+      <div class="eyebrow">创建者登录</div>
+      <h3>用邮箱验证码进入</h3>
+      <p class="meta">学员与上司无需登录，凭分享链接即可填写。</p>
+      <label for="email">邮箱</label>
+      <input type="email" id="email" placeholder="you@company.com" />
+      <div id="otpBox" class="hidden">
+        <label for="otp">验证码</label>
+        <input type="text" id="otp" placeholder="6 位验证码" inputmode="numeric" />
+      </div>
+      <div id="loginErr" class="error"></div>
+      <div style="margin-top:16px">
+        <button class="btn block" id="btnSendOtp">获取验证码</button>
+        <button class="btn block indigo hidden" id="btnVerify" style="margin-top:10px">登录 / 注册</button>
+      </div>
+    </div>
+  </section>
+
+  <section id="view-review" class="hidden">
+    <button class="btn ghost sm" id="btnBack">← 返回工作台</button>
+    <div class="hero">
+      <div class="eyebrow" id="rClient">项目</div>
+      <h1 id="rTitle">评价固化</h1>
+      <p>逐位学员查看迁移成果与上司反馈，给出你的评价；优秀行动可一键固化为组织范例，沉淀回课程模版库。</p>
+    </div>
+
+    <div class="card">
+      <div class="eyebrow">整体概览</div>
+      <div id="stats" class="grid cols-3" style="margin-top:8px"></div>
+    </div>
+
+    <div id="revList"></div>
+    <div id="revEmpty" class="empty hidden">该项目还没有学员提交。学员提交后，这里会逐位呈现。</div>
+  </section>
+
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/@tencent-ai/workbuddy-cloud-sdk@dev/lib/index.global.js"></script>
+<script src="publicConfig.js"></script>
+<script src="cloud-core.js"></script>
+<script>
+(function () {
+  'use strict';
+  var A = window.ALC;
+  if (typeof WorkBuddyCloud === 'undefined') { document.getElementById('view-login').classList.remove('hidden'); document.getElementById('loginErr').textContent = '云服务 SDK 加载失败，请刷新重试。'; return; }
+  A.init();
+
+  var q = new URLSearchParams(location.search);
+  var pid = q.get('pid');
+  var state = { project: null, subs: {}, fb: {}, reviews: {} };
+
+  function $(id) { return document.getElementById(id); }
+  function show(view) { ['login', 'review'].forEach(function (v) { $('view-' + v).classList.toggle('hidden', v !== view); }); }
+  function toast(msg) { var t = $('toast'); t.textContent = msg; t.classList.add('show'); clearTimeout(toast._t); toast._t = setTimeout(function () { t.classList.remove('show'); }, 2200); }
+
+  /* ---------------- 登录 ---------------- */
+  var pending = null;
+  $('btnSendOtp').addEventListener('click', function () {
+    var email = $('email').value.trim();
+    if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) { $('loginErr').textContent = '请输入有效邮箱'; return; }
+    $('loginErr').textContent = '';
+    A.auth.sendOtp(email).then(function (r) {
+      if (r.error) { $('loginErr').textContent = r.error.message || '发送失败'; return; }
+      pending = { email: email, verificationId: r.data.verificationId, isExistingUser: r.data.isExistingUser };
+      $('otpBox').classList.remove('hidden'); $('btnVerify').classList.remove('hidden');
+      $('btnSendOtp').textContent = '重新获取验证码'; toast('验证码已发送（演示环境请查看邮件）');
+    }).catch(function (e) { $('loginErr').textContent = e.message || '发送失败'; });
+  });
+  $('btnVerify').addEventListener('click', function () {
+    if (!pending) return;
+    var code = $('otp').value.trim();
+    if (!code) { $('loginErr').textContent = '请输入验证码'; return; }
+    A.auth.verifyOtp({ email: pending.email, verificationId: pending.verificationId, isExistingUser: pending.isExistingUser, token: code })
+      .then(function (r) { if (r.error) { $('loginErr').textContent = r.error.message || '验证失败'; return; } toast('登录成功'); })
+      .catch(function (e) { $('loginErr').textContent = e.message || '验证失败'; });
+  });
+  $('btnLogout').addEventListener('click', function () { A.auth.signOut().then(function () { location.reload(); }); });
+  $('btnBack').addEventListener('click', function () { location.href = 'index.html'; });
+
+  A.auth.onAuthStateChange(function (event, session) { if (session && session.user) enter(session.user); else show('login'); });
+  A.auth.getSession().then(function (r) { if (r.data && r.data.user) enter(r.data.user); else show('login'); });
+
+  function enter(user) {
+    $('who').textContent = user.email || '已登录'; $('who').classList.remove('hidden'); $('btnLogout').classList.remove('hidden');
+    show('review'); load();
+  }
+
+  /* ---------------- 数据 ---------------- */
+  function load() {
+    if (!pid) { toast('缺少项目参数'); return; }
+    Promise.all([ A.getProject(pid), A.getSubmissions(pid), A.getFeedback(pid), A.getReviews(pid) ]).then(function (res) {
+      state.project = res[0];
+      state.subs = indexByToken(res[1]);
+      state.fb = indexByToken(res[2]);
+      state.reviews = indexByToken(res[3]);
+      render();
+    }).catch(function (e) { toast('加载失败：' + (e.message || e)); });
+  }
+  function indexByToken(arr) { var m = {}; (arr || []).forEach(function (x) { m[x.student_token] = x; }); return m; }
+
+  function render() {
+    var p = state.project;
+    $('rClient').textContent = (p.client || '') + ' · ' + (p.cohort || '');
+    $('rTitle').textContent = p.title || '评价固化';
+    renderStats();
+    renderStudents();
+  }
+
+  function renderStats() {
+    var students = (state.project.students || []);
+    var submitted = students.filter(function (s) { return state.subs[s.token]; }).length;
+    var fbCount = students.filter(function (s) { return state.fb[s.token]; }).length;
+    // 量化达成率
+    var totalQ = 0, metQ = 0;
+    students.forEach(function (s) {
+      var sub = state.subs[s.token]; if (!sub || !sub.rows) return;
+      sub.rows.forEach(function (r) {
+        if (r.target === '' || r.target == null) return;
+        totalQ++;
+        var t = parseFloat(r.target), a = parseFloat(r.quantActual);
+        if (!isNaN(t) && !isNaN(a)) {
+          var met = (r.direction === 'down') ? (a <= t) : (a >= t);
+          if (met) metQ++;
+        }
+      });
+    });
+    var rate = totalQ ? Math.round(metQ / totalQ * 100) : null;
+    var stats = [
+      { n: students.length, l: '学员总数' },
+      { n: submitted + ' / ' + students.length, l: '已提交迁移' },
+      { n: fbCount + ' / ' + students.length, l: '上司已反馈' },
+      { n: rate == null ? '—' : rate + '%', l: '量化目标达成率' }
+    ];
+    $('stats').innerHTML = stats.map(function (s) {
+      return '<div class="card" style="margin:0;text-align:center"><div style="font-size:26px;font-weight:800;color:var(--primary-d)">' + s.n + '</div><div class="meta">' + s.l + '</div></div>';
+    }).join('');
+  }
+
+  function renderStudents() {
+    var box = $('revList'); box.innerHTML = '';
+    var students = (state.project.students || []);
+    $('revEmpty').classList.toggle('hidden', students.length > 0);
+    students.forEach(function (s) {
+      var sub = state.subs[s.token];
+      var fb = state.fb[s.token];
+      var rev = state.reviews[s.token];
+      var card = document.createElement('div'); card.className = 'card';
+      var badges = '';
+      badges += sub ? '<span class="badge ok">已提交</span>' : '<span class="badge pending">未提交</span>';
+      badges += fb ? '<span class="badge indigo">上司已反馈</span>' : '<span class="badge muted">待上司反馈</span>';
+      var html = '<div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap"><div class="who" style="font-size:17px;font-weight:800">' + A.esc(s.name) + '</div>' + badges + '</div>';
+
+      // 学员成果
+      if (sub && sub.rows && sub.rows.length) {
+        html += '<div class="eyebrow" style="margin-top:14px">学员迁移成果</div>';
+        sub.rows.forEach(function (r) {
+          var quantified = r.target !== '' && r.target != null;
+          html += '<div class="fb"><div class="who"><span class="pill">' + A.esc(r.section || '行动') + '</span> &nbsp;' + A.esc(r.action || '') + '</div>';
+          html += '<div class="meta">场景：' + A.esc(r.scene || '—') + '</div>';
+          html += '<div style="margin-top:6px"><b>结果影响：</b>' + A.esc(r.resultImpact || '（未填写）') + '</div>';
+          if (quantified) html += '<div class="meta">目标 ' + A.esc(r.target) + ' ' + A.esc(r.unit || '') + ' · 实际 <b>' + A.esc(r.quantActual != null ? r.quantActual : '—') + '</b></div>';
+          if (r.difficulty) html += '<div class="meta">困难：' + A.esc(r.difficulty) + '</div>';
+          if (r.futureApplication) html += '<div class="meta">未来应用：' + A.esc(r.futureApplication) + '</div>';
+          html += '</div>';
+        });
+      } else {
+        html += '<div class="note" style="margin-top:14px">学员尚未提交迁移表。</div>';
+      }
+
+      // 上司反馈
+      if (fb) {
+        html += '<div class="eyebrow" style="margin-top:14px">上司反馈（三段式）</div><div class="fb">';
+        html += '<div><b>整体评语：</b>' + A.esc(fb.overall || '') + '</div>';
+        html += '<div style="margin-top:6px"><b>建议：</b></div>';
+        (fb.suggestions || []).forEach(function (g) { html += '<div class="meta">· ' + A.esc(g) + '</div>'; });
+        html += '<div style="margin-top:6px"><b>承诺跟进：</b>' + A.esc(fb.commitment || '') + '</div>';
+        html += '</div>';
+      }
+
+      // 讲师评价
+      var revId = rev ? rev.id : null;
+      var rating = rev ? (rev.rating || '') : '';
+      var comment = rev ? (rev.comment || '') : '';
+      var exemplar = (rev && rev.exemplar) ? rev.exemplar : [];
+      html += '<div class="eyebrow" style="margin-top:14px">你的评价</div>';
+      html += '<label>评级</label><select id="rate_' + s.token + '"><option value="">— 未评 —</option><option value="A"' + (rating === 'A' ? ' selected' : '') + '>A · 优秀范例</option><option value="B"' + (rating === 'B' ? ' selected' : '') + '>B · 达标</option><option value="C"' + (rating === 'C' ? ' selected' : '') + '>C · 待提升</option></select>';
+      html += '<label>评语（可沉淀为组织资产）</label><textarea id="cmt_' + s.token + '" rows="2" placeholder="这次迁移的亮点、可复制的做法、给该学员的下一步">' + A.esc(comment) + '</textarea>';
+      html += '<div id="ex_' + s.token + '"></div>';
+      html += '<div style="display:flex;gap:10px;margin-top:10px;flex-wrap:wrap"><button class="btn sm" data-save="' + s.token + '">保存评价</button>';
+      if (sub && sub.rows && sub.rows.length) html += '<button class="btn ghost sm" data-ex="' + s.token + '">★ 选范例并固化到模版库</button>';
+      html += '</div>';
+
+      card.innerHTML = html;
+      box.appendChild(card);
+
+      renderExSelector(s.token, sub, exemplar);
+      card.querySelector('[data-save="' + s.token + '"]').addEventListener('click', function () { saveReview(s.token, revId); });
+      var exBtn = card.querySelector('[data-ex="' + s.token + '"]');
+      if (exBtn) exBtn.addEventListener('click', function () { pickExemplar(s.token, sub); });
+    });
+  }
+
+  function renderExSelector(token, sub, exemplar) {
+    var box = $('ex_' + token); if (!box) return;
+    var ex = exemplar || [];
+    box.innerHTML = sub.rows.map(function (r, i) {
+      var checked = ex.some(function (e) { return e.id === r.id; }) ? 'checked' : '';
+      return '<label style="display:flex;gap:8px;align-items:flex-start;margin:4px 0;font-weight:500"><input type="checkbox" data-exi="' + i + '" ' + checked + ' style="width:auto;margin-top:6px"> <span>选为范例：<b>' + A.esc(r.action || '') + '</b> — ' + A.esc((r.resultImpact || '').slice(0, 40)) + '</span></label>';
+    }).join('');
+    box.querySelectorAll('input[data-exi]').forEach(function (cb) {
+      cb.addEventListener('change', function () {
+        var i = +cb.getAttribute('data-exi');
+        var exArr = (getCurrentEx(token, sub) || []);
+        if (cb.checked) { if (!exArr.some(function (e) { return e.id === sub.rows[i].id; })) exArr.push(rowToExemplar(sub.rows[i])); }
+        else { exArr = exArr.filter(function (e) { return e.id !== sub.rows[i].id; }); }
+        saveExemplar(token, exArr);
+      });
+    });
+  }
+  function rowToExemplar(r) { return { id: r.id, section: r.section, action: r.action, scene: r.scene, resultImpact: r.resultImpact, quantActual: r.quantActual, target: r.target, unit: r.unit }; }
+  function getCurrentEx(token, sub) {
+    var rev = state.reviews[token];
+    if (rev && rev.exemplar) return rev.exemplar;
+    // 否则从 DOM 推断（简化处理：返回已勾选）
+    var checked = [];
+    var box = $('ex_' + token);
+    if (box) box.querySelectorAll('input[data-exi]:checked').forEach(function (cb) { var i = +cb.getAttribute('data-exi'); checked.push(rowToExemplar(sub.rows[i])); });
+    return checked;
+  }
+  function saveExemplar(token, exArr) {
+    var rev = state.reviews[token];
+    var payload = { project_id: +pid, student_token: token, rating: (rev ? rev.rating : ''), comment: (rev ? rev.comment : ''), exemplar: exArr };
+    if (rev && rev.id) payload.id = rev.id;
+    A.saveReview(payload).then(function (saved) {
+      state.reviews[token] = saved;
+      toast('范例选择已记录');
+    }).catch(function (e) { toast('保存失败：' + (e.message || e)); });
+  }
+
+  function saveReview(token, revId) {
+    var rating = $('rate_' + token).value;
+    var comment = $('cmt_' + token).value.trim();
+    var exArr = getCurrentEx(token, state.subs[token]) || [];
+    var payload = { project_id: +pid, student_token: token, rating: rating, comment: comment, exemplar: exArr };
+    if (revId) payload.id = revId;
+    A.saveReview(payload).then(function (saved) {
+      state.reviews[token] = saved;
+      toast('评价已保存');
+    }).catch(function (e) { toast('保存失败：' + (e.message || e)); });
+  }
+
+  function pickExemplar(token, sub) {
+    var exArr = getCurrentEx(token, sub) || [];
+    if (!exArr.length) { toast('请先勾选至少一条范例'); return; }
+    var courseId = state.project.course_id;
+    var stName = (state.project.students.find(function (s) { return s.token === token; }) || {}).name || '学员';
+    var tasks = exArr.map(function (e) {
+      return A.appendTemplate(courseId, { id: A.uid('t'), section: e.section, action: e.action, scene: e.scene, resultImpact: e.resultImpact, quantActual: e.quantActual, target: e.target, unit: e.unit, source: stName, createdAt: new Date().toISOString() });
+    });
+    Promise.all(tasks).then(function () {
+      toast('已固化 ' + exArr.length + ' 条范例到课程模版库');
+    }).catch(function (e) { toast('固化失败：' + (e.message || e)); });
+  }
+})();
+</script>
+</body>
+</html>

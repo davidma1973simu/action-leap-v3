@@ -1,0 +1,428 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Action Leap · 学习迁移工作台（创建者）</title>
+<link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+
+<!-- 顶栏 -->
+<div class="topbar" id="topbar">
+  <div class="brand"><span class="dot"></span>Action Leap<small>学习迁移 · 创建者工作台</small></div>
+  <div class="spacer"></div>
+  <span id="who" class="badge muted hidden"></span>
+  <button class="btn ghost sm hidden" id="btnLogout">退出</button>
+</div>
+
+<div class="wrap">
+
+  <!-- 登录 -->
+  <section id="view-login" class="hidden">
+    <div class="card login-card">
+      <div class="eyebrow">创建者登录</div>
+      <h3>用邮箱验证码进入</h3>
+      <p class="meta">学员与上司无需登录，凭分享链接即可填写。</p>
+      <label for="email">邮箱</label>
+      <input type="email" id="email" placeholder="you@company.com" />
+      <div id="otpBox" class="hidden">
+        <label for="otp">验证码</label>
+        <input type="text" id="otp" placeholder="6 位验证码" inputmode="numeric" />
+      </div>
+      <div id="loginErr" class="error"></div>
+      <div style="margin-top:16px">
+        <button class="btn block" id="btnSendOtp">获取验证码</button>
+        <button class="btn block indigo hidden" id="btnVerify" style="margin-top:10px">登录 / 注册</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- 仪表盘 -->
+  <section id="view-dashboard" class="hidden">
+    <div class="hero">
+      <div class="eyebrow">课程与项目</div>
+      <h1>你的学习迁移蓝图</h1>
+      <p>在「课程」里定义可复用的课后应用迁移框架（一张表），在「项目」里把框架派发给某一期学员，自动生成学员与上司的填写链接。</p>
+    </div>
+    <div style="display:flex;gap:12px;align-items:center;margin-bottom:14px">
+      <h3 style="margin:0">课程蓝图</h3>
+      <div class="spacer"></div>
+      <button class="btn sm" id="btnNewCourse">+ 新建课程</button>
+    </div>
+    <div id="courseList" class="grid cols-2"></div>
+    <div id="courseEmpty" class="empty hidden">还没有课程。点击「新建课程」开始定义第一张迁移表。</div>
+  </section>
+
+  <!-- 课程详情 + 一表编辑 -->
+  <section id="view-course" class="hidden">
+    <div class="steps">
+      <div class="s active"><span class="n">1</span>定义框架</div>
+      <div class="s"><span class="n">2</span>派发项目</div>
+      <div class="s"><span class="n">3</span>评价固化</div>
+    </div>
+    <div style="display:flex;gap:10px;align-items:center;margin-bottom:12px">
+      <button class="btn ghost sm" id="btnBackDash">← 课程列表</button>
+      <div class="spacer"></div>
+      <button class="btn ghost sm" id="btnNewProject">+ 派发新项目</button>
+    </div>
+
+    <div class="card">
+      <div class="eyebrow">课程信息（阶段一 · 定义）</div>
+      <div class="row2">
+        <div><label>客户 / 企业</label><input type="text" id="cClient" placeholder="如：松下电机 中国" /></div>
+        <div><label>学员群体 / 班级</label><input type="text" id="cCohort" placeholder="如：储备干部远航班" /></div>
+      </div>
+      <label>课程主题</label><input type="text" id="cTheme" placeholder="如：战略执行与全局经营沙盘" />
+      <label>课程目标 / 待解决的业务问题</label><textarea id="cNeeds" rows="2" placeholder="学员回到岗位后，需要真正用起来的关键动作与目标"></textarea>
+    </div>
+
+    <div class="card">
+      <div style="display:flex;gap:10px;align-items:center">
+        <div class="eyebrow" style="margin:0">一张迁移表（模块 / 场景 / 行动 / 量化验收）</div>
+        <div class="spacer"></div>
+        <button class="btn ghost sm" id="btnAIDraft">AI 起草</button>
+        <button class="btn ghost sm" id="btnAddRow">+ 加一行</button>
+      </div>
+      <p class="meta">每行 = 一个可衡量的行动。学员填写时只需补「结果 + 实际值」两栏，降低负担。</p>
+      <div class="note" id="aiNote" class="hidden"></div>
+      <div style="overflow:auto">
+        <table class="one" id="fwTable">
+          <thead><tr>
+            <th class="idx">#</th><th>模块</th><th>应用场景</th><th>具体行动</th>
+            <th>基线</th><th>目标</th><th>单位</th><th>方向</th><th>量化指标名</th><th></th>
+          </tr></thead>
+          <tbody id="fwBody"></tbody>
+        </table>
+      </div>
+      <div id="fwErr" class="error"></div>
+      <div style="margin-top:14px"><button class="btn" id="btnSaveCourse">保存课程</button>
+        <button class="btn ghost" id="btnDelCourse" style="margin-left:8px">删除课程</button></div>
+    </div>
+
+    <div class="card">
+      <div class="eyebrow">本项目期次（阶段二 / 三 的实例）</div>
+      <div id="projList" class="grid"></div>
+      <div id="projEmpty" class="empty hidden">还没有派发项目。点「派发新项目」把这张表交给某一期学员。</div>
+    </div>
+  </section>
+
+  <!-- 项目派发 -->
+  <section id="view-project" class="hidden">
+    <div class="steps">
+      <div class="s done"><span class="n">1</span>定义框架</div>
+      <div class="s active"><span class="n">2</span>派发项目</div>
+      <div class="s"><span class="n">3</span>评价固化</div>
+    </div>
+    <div style="margin-bottom:12px"><button class="btn ghost sm" id="btnBackCourse">← 返回课程</button></div>
+
+    <div class="card" id="projForm">
+      <div class="eyebrow">项目信息</div>
+      <div class="row2">
+        <div><label>项目名称</label><input type="text" id="pTitle" placeholder="如：2026 Q1 远航班课后迁移" /></div>
+        <div><label>班级 / 群体</label><input type="text" id="pCohort" placeholder="默认带出课程群体" /></div>
+      </div>
+      <div class="row2">
+        <div><label>开始日期</label><input type="text" id="pStart" placeholder="2026-01-01" /></div>
+        <div><label>截止日期</label><input type="text" id="pEnd" placeholder="2026-01-15" /></div>
+      </div>
+      <div class="eyebrow" style="margin-top:16px">学员与上司名单</div>
+      <p class="meta">每行一位学员，填写「学员姓名」与「其直接上司姓名」。系统自动生成令牌与免登录链接。</p>
+      <div id="roster"></div>
+      <button class="btn ghost sm" id="btnAddStudent" style="margin-top:8px">+ 加一位学员</button>
+      <div id="projErr" class="error"></div>
+      <div style="margin-top:14px"><button class="btn" id="btnGenLinks">生成链接并保存</button></div>
+    </div>
+
+    <div class="card hidden" id="linksCard">
+      <div class="eyebrow">免登录链接（直接发给学员 / 上司）</div>
+      <p class="meta">学员链接含填写令牌；上司链接在其基础上加「上司令牌」。无需账号，点开即填。</p>
+      <div id="linkList"></div>
+      <div class="note">提示：复制链接用微信 / 邮件发给对应的人。学员提交后，上司会收到自己的链接去写反馈；你在「评价固化」里能看到全部结果。</div>
+    </div>
+  </section>
+
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/@tencent-ai/workbuddy-cloud-sdk@dev/lib/index.global.js"></script>
+<script src="publicConfig.js"></script>
+<script src="cloud-core.js"></script>
+<script>
+(function () {
+  'use strict';
+  var A = window.ALC;
+  if (typeof WorkBuddyCloud === 'undefined') {
+    document.getElementById('view-login').classList.remove('hidden');
+    document.getElementById('loginErr').textContent = '云服务 SDK 加载失败，请检查网络后刷新。';
+    return;
+  }
+  A.init();
+
+  var BASE = location.origin + location.pathname.replace(/[^/]*$/, '');
+  var state = { course: null, projectId: null, rows: [], roster: [] };
+
+  function $(id) { return document.getElementById(id); }
+  function show(view) {
+    ['login', 'dashboard', 'course', 'project'].forEach(function (v) {
+      $('view-' + v).classList.toggle('hidden', v !== view);
+    });
+  }
+  function toast(msg) {
+    var t = $('toast'); t.textContent = msg; t.classList.add('show');
+    clearTimeout(toast._t); toast._t = setTimeout(function () { t.classList.remove('show'); }, 2200);
+  }
+  function esc(s) { return A.esc(s); }
+
+  /* ---------------- 登录 ---------------- */
+  var pending = null;
+  $('btnSendOtp').addEventListener('click', function () {
+    var email = $('email').value.trim();
+    if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) { $('loginErr').textContent = '请输入有效邮箱'; return; }
+    $('loginErr').textContent = '';
+    A.auth.sendOtp(email).then(function (r) {
+      if (r.error) { $('loginErr').textContent = r.error.message || '发送失败'; return; }
+      pending = { email: email, verificationId: r.data.verificationId, isExistingUser: r.data.isExistingUser };
+      $('otpBox').classList.remove('hidden'); $('btnVerify').classList.remove('hidden');
+      $('btnSendOtp').textContent = '重新获取验证码';
+      toast('验证码已发送（演示环境请查看邮件）');
+    }).catch(function (e) { $('loginErr').textContent = e.message || '发送失败'; });
+  });
+  $('btnVerify').addEventListener('click', function () {
+    if (!pending) return;
+    var code = $('otp').value.trim();
+    if (!code) { $('loginErr').textContent = '请输入验证码'; return; }
+    A.auth.verifyOtp({ email: pending.email, verificationId: pending.verificationId, isExistingUser: pending.isExistingUser, token: code })
+      .then(function (r) {
+        if (r.error) { $('loginErr').textContent = r.error.message || '验证失败'; return; }
+        toast('登录成功');
+      }).catch(function (e) { $('loginErr').textContent = e.message || '验证失败'; });
+  });
+  $('btnLogout').addEventListener('click', function () {
+    A.auth.signOut().then(function () { location.reload(); });
+  });
+
+  A.auth.onAuthStateChange(function (event, session) {
+    if (session && session.user) { enter(session.user); } else { show('login'); }
+  });
+  A.auth.getSession().then(function (r) {
+    if (r.data && r.data.user) enter(r.data.user); else show('login');
+  });
+
+  function enter(user) {
+    $('who').textContent = user.email || '已登录';
+    $('who').classList.remove('hidden'); $('btnLogout').classList.remove('hidden');
+    show('dashboard'); loadCourses();
+  }
+
+  /* ---------------- 仪表盘 ---------------- */
+  function loadCourses() {
+    A.listCourses().then(function (list) {
+      var box = $('courseList'); box.innerHTML = '';
+      $('courseEmpty').classList.toggle('hidden', list.length > 0);
+      list.forEach(function (c) {
+        var rows = (c.framework || []).length;
+        var projCount = c._proj || 0;
+        var el = document.createElement('div'); el.className = 'card';
+        el.innerHTML = '<div class="eyebrow">' + esc(c.client || '未命名客户') + '</div>' +
+          '<h3>' + esc(c.theme || '未命名课程') + '</h3>' +
+          '<div class="meta">群体：' + esc(c.cohort || '—') + ' · 迁移表 ' + rows + ' 行</div>' +
+          '<div style="margin-top:12px;display:flex;gap:8px"><button class="btn sm" data-open="' + c.id + '">打开</button>' +
+          '<button class="btn ghost sm" data-review="' + c.id + '">查看项目</button></div>';
+        box.appendChild(el);
+      });
+      box.querySelectorAll('[data-open]').forEach(function (b) {
+        b.addEventListener('click', function () { openCourse(b.getAttribute('data-open')); });
+      });
+    }).catch(function (e) { toast('加载失败：' + (e.message || e)); });
+  }
+  $('btnNewCourse').addEventListener('click', function () {
+    state.course = { client: '', cohort: '', theme: '', needs: '', framework: [], templates: [] };
+    state.rows = [];
+    renderCourse(); show('course');
+  });
+  $('btnBackDash').addEventListener('click', function () { show('dashboard'); loadCourses(); });
+
+  /* ---------------- 课程详情 + 一表 ---------------- */
+  function openCourse(id) {
+    A.getCourse(id).then(function (c) {
+      state.course = c; state.rows = (c.framework || []).map(function (r) { return Object.assign({}, r); });
+      renderCourse(); show('course'); loadProjects(id);
+    }).catch(function (e) { toast('打开失败：' + (e.message || e)); });
+  }
+  function renderCourse() {
+    var c = state.course;
+    $('cClient').value = c.client || ''; $('cCohort').value = c.cohort || '';
+    $('cTheme').value = c.theme || ''; $('cNeeds').value = c.needs || '';
+    renderFw();
+  }
+  function renderFw() {
+    var body = $('fwBody'); body.innerHTML = '';
+    state.rows.forEach(function (r, i) {
+      var tr = document.createElement('tr');
+      tr.innerHTML =
+        '<td class="idx">' + (i + 1) + '</td>' +
+        '<td><input data-i="' + i + '" data-f="section" value="' + esc(r.section) + '"></td>' +
+        '<td><input data-i="' + i + '" data-f="scene" value="' + esc(r.scene) + '"></td>' +
+        '<td><input data-i="' + i + '" data-f="action" value="' + esc(r.action) + '"></td>' +
+        '<td><input data-i="' + i + '" data-f="baseline" value="' + esc(r.baseline) + '" style="width:64px"></td>' +
+        '<td><input data-i="' + i + '" data-f="target" value="' + esc(r.target) + '" style="width:64px"></td>' +
+        '<td><input data-i="' + i + '" data-f="unit" value="' + esc(r.unit) + '" style="width:48px"></td>' +
+        '<td><select data-i="' + i + '" data-f="direction"><option value="up">↑提升</option><option value="down">↓下降</option></select></td>' +
+        '<td><input data-i="' + i + '" data-f="note" value="' + esc(r.note) + '"></td>' +
+        '<td><button class="btn ghost sm" data-del="' + i + '">删</button></td>';
+      body.appendChild(tr);
+    });
+    body.querySelectorAll('input,select').forEach(function (inp) {
+      inp.addEventListener('input', function () {
+        var i = +inp.getAttribute('data-i'), f = inp.getAttribute('data-f');
+        state.rows[i][f] = inp.value;
+      });
+    });
+    body.querySelectorAll('[data-del]').forEach(function (b) {
+      b.addEventListener('click', function () { state.rows.splice(+b.getAttribute('data-del'), 1); renderFw(); });
+    });
+    body.querySelectorAll('select[data-f="direction"]').forEach(function (s) {
+      s.value = state.rows[+s.getAttribute('data-i')].direction || 'up';
+    });
+  }
+  $('btnAddRow').addEventListener('click', function () {
+    state.rows.push({ id: A.uid('a'), section: '', scene: '', action: '', baseline: '', target: '', unit: '', direction: 'up', note: '' });
+    renderFw();
+  });
+  $('btnSaveCourse').addEventListener('click', function () {
+    var c = state.course;
+    c.client = $('cClient').value.trim(); c.cohort = $('cCohort').value.trim();
+    c.theme = $('cTheme').value.trim(); c.needs = $('cNeeds').value.trim();
+    c.framework = state.rows.map(function (r) {
+      return { id: r.id || A.uid('a'), section: r.section, scene: r.scene, action: r.action,
+        baseline: r.baseline, target: r.target, unit: r.unit, direction: r.direction || 'up', note: r.note };
+    });
+    A.saveCourse(c).then(function (saved) {
+      state.course = saved; toast('课程已保存');
+      if (saved.id) loadProjects(saved.id);
+    }).catch(function (e) { $('fwErr').textContent = '保存失败：' + (e.message || e); });
+  });
+  $('btnDelCourse').addEventListener('click', function () {
+    if (!state.course.id) { show('dashboard'); return; }
+    if (!confirm('确认删除该课程？其下项目的学员数据将不可恢复。')) return;
+    A.deleteCourse(state.course.id).then(function () { show('dashboard'); loadCourses(); });
+  });
+  $('btnAIDraft').addEventListener('click', function () {
+    var c = state.course;
+    var prompt = '课程主题：' + ($('cTheme').value.trim() || c.theme) + '\n' +
+      '客户：' + ($('cClient').value.trim() || c.client) + '\n' +
+      '目标：' + ($('cNeeds').value.trim() || c.needs) + '\n' +
+      '请设计课后学习迁移表，4-6 个模块，每模块 1-2 个具体可量化行动。';
+    $('aiNote').classList.remove('hidden'); $('aiNote').textContent = 'AI 起草中…';
+    A.draftRows(prompt).then(function (rows) {
+      state.rows = rows.map(function (r) {
+        return { id: A.uid('a'), section: r.section || '', scene: r.scene || '', action: r.action || '',
+          baseline: r.baseline != null ? String(r.baseline) : '', target: r.target != null ? String(r.target) : '',
+          unit: r.unit || '', direction: r.direction === 'down' ? 'down' : 'up', note: r.note || '' };
+      });
+      renderFw(); $('aiNote').textContent = '已根据描述起草 ' + state.rows.length + ' 行，可继续编辑。';
+    }).catch(function (e) {
+      $('aiNote').textContent = (e.message === 'no-model') ? '当前无可用模型，请稍后重试或手动填写。' : ('AI 起草失败：' + (e.message || e));
+    });
+  });
+
+  function loadProjects(courseId) {
+    A.listProjects(courseId).then(function (list) {
+      var box = $('projList'); box.innerHTML = '';
+      $('projEmpty').classList.toggle('hidden', list.length > 0);
+      list.forEach(function (p) {
+        var n = (p.students || []).length;
+        var el = document.createElement('div'); el.className = 'card';
+        el.style.margin = '0';
+        el.innerHTML = '<div class="eyebrow">' + esc(p.title || '未命名项目') + '</div>' +
+          '<div class="meta">学员 ' + n + ' 人 · ' + esc(p.start_date || '?') + ' ~ ' + esc(p.end_date || '?') + '</div>' +
+          '<div style="margin-top:10px;display:flex;gap:8px"><a class="btn sm" href="review.html?pid=' + p.id + '">评价固化</a>' +
+          '<button class="btn ghost sm" data-links="' + p.id + '">查看链接</button></div>';
+        box.appendChild(el);
+      });
+      box.querySelectorAll('[data-links]').forEach(function (b) {
+        b.addEventListener('click', function () { openProject(b.getAttribute('data-links')); });
+      });
+    });
+  }
+  $('btnNewProject').addEventListener('click', function () {
+    if (!state.course.id) { toast('请先保存课程'); return; }
+    state.projectId = null; state.roster = [];
+    $('pTitle').value = ''; $('pCohort').value = state.course.cohort || '';
+    $('pStart').value = ''; $('pEnd').value = '';
+    $('linksCard').classList.add('hidden');
+    renderRoster(); show('project');
+  });
+  $('btnBackCourse').addEventListener('click', function () { renderCourse(); show('course'); loadProjects(state.course.id); });
+
+  /* ---------------- 项目派发 ---------------- */
+  function renderRoster() {
+    var box = $('roster'); box.innerHTML = '';
+    if (!state.roster.length) state.roster.push({ name: '', sup: '' });
+    state.roster.forEach(function (s, i) {
+      var d = document.createElement('div'); d.style.cssText = 'display:flex;gap:8px;margin:6px 0;align-items:center';
+      d.innerHTML = '<input style="flex:1" placeholder="学员姓名" data-ri="' + i + '" data-rf="name" value="' + esc(s.name) + '">' +
+        '<input style="flex:1" placeholder="直接上司姓名" data-ri="' + i + '" data-rf="sup" value="' + esc(s.sup) + '">' +
+        '<button class="btn ghost sm" data-rdel="' + i + '">✕</button>';
+      box.appendChild(d);
+    });
+    box.querySelectorAll('input').forEach(function (inp) {
+      inp.addEventListener('input', function () { state.roster[+inp.getAttribute('data-ri')][inp.getAttribute('data-rf')] = inp.value; });
+    });
+    box.querySelectorAll('[data-rdel]').forEach(function (b) {
+      b.addEventListener('click', function () { state.roster.splice(+b.getAttribute('data-rdel'), 1); renderRoster(); });
+    });
+  }
+  $('btnAddStudent').addEventListener('click', function () { state.roster.push({ name: '', sup: '' }); renderRoster(); });
+
+  $('btnGenLinks').addEventListener('click', function () {
+    var title = $('pTitle').value.trim();
+    if (!title) { $('projErr').textContent = '请填写项目名称'; return; }
+    var students = state.roster.filter(function (s) { return s.name.trim(); }).map(function (s) {
+      return { id: A.uid('s'), name: s.name.trim(), supName: s.sup.trim(), token: A.token(24), supToken: A.token(24) };
+    });
+    if (!students.length) { $('projErr').textContent = '请至少添加一位学员'; return; }
+    $('projErr').textContent = '';
+    var proj = {
+      id: state.projectId || undefined,
+      course_id: state.course.id,
+      title: title, client: state.course.client, cohort: $('pCohort').value.trim() || state.course.cohort,
+      start_date: $('pStart').value.trim() || null, end_date: $('pEnd').value.trim() || null,
+      students: students
+    };
+    A.saveProject(proj).then(function (saved) {
+      state.projectId = saved.id;
+      renderLinks(saved);
+      toast('已生成 ' + students.length + ' 条学员链接');
+    }).catch(function (e) { $('projErr').textContent = '保存失败：' + (e.message || e); });
+  });
+
+  function renderLinks(p) {
+    var list = $('linkList'); list.innerHTML = '';
+    (p.students || []).forEach(function (s) {
+      var sUrl = BASE + 'student.html?pid=' + p.id + '&tok=' + s.token;
+      var supUrl = BASE + 'supervisor.html?pid=' + p.id + '&tok=' + s.token + '&suptok=' + s.supToken;
+      var div = document.createElement('div'); div.style.cssText = 'margin:10px 0;padding:10px;border:1px solid var(--line);border-radius:10px';
+      div.innerHTML = '<div class="who"><b>' + esc(s.name) + '</b>　上司：' + esc(s.supName || '—') + '</div>' +
+        '<div class="linkrow"><span class="pill">学员</span><input readonly value="' + esc(sUrl) + '"><button class="btn ghost sm copybtn" data-c="' + esc(sUrl) + '">复制</button></div>' +
+        '<div class="linkrow"><span class="pill">上司</span><input readonly value="' + esc(supUrl) + '"><button class="btn ghost sm copybtn" data-c="' + esc(supUrl) + '">复制</button></div>';
+      list.appendChild(div);
+    });
+    list.querySelectorAll('.copybtn').forEach(function (b) {
+      b.addEventListener('click', function () { copy(b.getAttribute('data-c')); });
+    });
+    $('linksCard').classList.remove('hidden');
+  }
+  function openProject(id) {
+    A.getProject(id).then(function (p) { state.projectId = p.id; renderLinks(p); show('project'); });
+  }
+  function copy(text) {
+    if (navigator.clipboard) navigator.clipboard.writeText(text).then(function () { toast('已复制'); });
+    else toast('请手动复制');
+  }
+})();
+</script>
+</body>
+</html>
