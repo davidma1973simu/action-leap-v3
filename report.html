@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Action Leap · 汇总报表</title>
+<link rel="stylesheet" href="styles.css" />
+<style>
+  @media print {
+    .no-print { display: none !important; }
+    body { background: #fff; }
+    .report { max-width: 920px; margin: 0 auto; padding: 0; }
+    .rsec { break-inside: avoid; }
+    .topbar { position: static; box-shadow: none; border: none; }
+  }
+  .report { max-width: 920px; margin: 0 auto; padding: 8px 4px 60px; }
+  .report h1 { font-size: 24px; margin: 4px 0 2px; }
+  .r-meta { color: var(--ink-soft); font-size: 13px; margin-bottom: 18px; }
+  .rsec { background: var(--card); border: 1px solid var(--line); border-radius: var(--r); padding: 18px 20px; margin: 14px 0; }
+  .rsec h2 { font-size: 17px; margin: 0 0 10px; display: flex; align-items: center; gap: 8px; }
+  .rsec h2 .n { width: 24px; height: 24px; border-radius: 50%; background: var(--primary); color: #fff; display: grid; place-items: center; font-size: 13px; }
+  .rgrid { width: 100%; border-collapse: collapse; font-size: 13px; }
+  .rgrid th, .rgrid td { text-align: left; padding: 7px 8px; border-bottom: 1px solid var(--line); vertical-align: top; }
+  .rgrid th { color: var(--ink-faint); font-weight: 600; }
+  .pillA { background: #FFE9DF; color: #C2410C; }
+  .pillB { background: var(--indigo-soft); color: var(--indigo); }
+  .pillC { background: #FDECEC; color: #B23A3A; }
+  .rbadge { display: inline-block; font-size: 11px; padding: 1px 8px; border-radius: 999px; font-weight: 700; }
+  .toolbar { position: sticky; top: 0; z-index: 30; background: var(--bg); padding: 10px 0; display: flex; gap: 8px; flex-wrap: wrap; }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="brand"><span class="dot"></span>Action Leap<small>课后学习迁移 · 汇总报表</small></div>
+</div>
+
+<div class="wrap" style="max-width:920px">
+  <section id="view-login" class="hidden">
+    <div class="card login-card">
+      <div class="eyebrow">创建者登录</div>
+      <h3>用邮箱验证码进入</h3>
+      <label for="email">邮箱</label>
+      <input type="email" id="email" placeholder="you@company.com" />
+      <div id="otpBox" class="hidden">
+        <label for="otp">验证码</label>
+        <input type="text" id="otp" placeholder="6 位验证码" inputmode="numeric" />
+      </div>
+      <div id="loginErr" class="error"></div>
+      <div style="margin-top:16px">
+        <button class="btn block" id="btnSendOtp">获取验证码</button>
+        <button class="btn block indigo hidden" id="btnVerify" style="margin-top:10px">登录 / 注册</button>
+      </div>
+    </div>
+  </section>
+
+  <section id="view-report" class="hidden">
+    <div class="toolbar no-print">
+      <button class="btn sm" id="btnPrint">打印 / 另存 PDF</button>
+      <button class="btn ghost sm" id="btnDownloadHtml">下载 HTML</button>
+      <button class="btn ghost sm" id="btnDownloadCsv">下载 CSV</button>
+      <a class="btn ghost sm" href="review.html" id="btnBack">← 返回评价固化</a>
+    </div>
+    <div id="report" class="report"></div>
+  </section>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/@tencent-ai/workbuddy-cloud-sdk@dev/lib/index.global.js"></script>
+<script src="publicConfig.js"></script>
+<script src="cloud-core.js"></script>
+<script>
+(function () {
+  'use strict';
+  var A = window.ALC;
+  if (typeof WorkBuddyCloud === 'undefined') { document.getElementById('view-login').classList.remove('hidden'); document.getElementById('loginErr').textContent = '云服务 SDK 加载失败，请刷新重试。'; return; }
+  A.init();
+
+  var q = new URLSearchParams(location.search);
+  var pid = q.get('pid');
+  var state = { project: null, subs: {}, fb: {}, reviews: {}, course: null, wrapup: {} };
+  var REPORT_HTML = '';
+
+  function $(id) { return document.getElementById(id); }
+  function show(view) { ['login', 'report'].forEach(function (v) { $('view-' + v).classList.toggle('hidden', v !== view); }); }
+  function toast(m) { var t = $('toast'); t.textContent = m; t.classList.add('show'); clearTimeout(toast._t); toast._t = setTimeout(function () { t.classList.remove('show'); }, 2200); }
+
+  /* 登录 */
+  var pending = null;
+  $('btnSendOtp').addEventListener('click', function () {
+    var email = $('email').value.trim();
+    if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) { $('loginErr').textContent = '请输入有效邮箱'; return; }
+    $('loginErr').textContent = '';
+    A.auth.sendOtp(email).then(function (r) {
+      if (r.error) { $('loginErr').textContent = r.error.message || '发送失败'; return; }
+      pending = { email: email, verificationId: r.data.verificationId, isExistingUser: r.data.isExistingUser };
+      $('otpBox').classList.remove('hidden'); $('btnVerify').classList.remove('hidden');
+      $('btnSendOtp').textContent = '重新获取验证码'; toast('验证码已发送');
+    }).catch(function (e) { $('loginErr').textContent = e.message || '发送失败'; });
+  });
+  $('btnVerify').addEventListener('click', function () {
+    if (!pending) return;
+    var code = $('otp').value.trim();
+    if (!code) { $('loginErr').textContent = '请输入验证码'; return; }
+    A.auth.verifyOtp({ email: pending.email, verificationId: pending.verificationId, isExistingUser: pending.isExistingUser, token: code })
+      .then(function (r) { if (r.error) { $('loginErr').textContent = r.error.message || '验证失败'; return; } toast('登录成功'); })
+      .catch(function (e) { $('loginErr').textContent = e.message || '验证失败'; });
+  });
+  A.auth.onAuthStateChange(function (ev, session) { if (session && session.user) enter(); else show('login'); });
+  A.auth.getSession().then(function (r) { if (r.data && r.data.user) enter(); else show('login'); });
+
+  function enter() { show('report'); load(); }
+
+  function load() {
+    if (!pid) { toast('缺少项目参数'); return; }
+    Promise.all([ A.getProject(pid), A.getSubmissions(pid), A.getFeedback(pid), A.getReviews(pid) ]).then(function (res) {
+      state.project = res[0];
+      state.subs = index(res[1]); state.fb = index(res[2]); state.reviews = index(res[3]);
+      state.wrapup = res[0].wrapup || {};
+      return A.getCourse(state.project.course_id).then(function (c) { state.course = c; render(); });
+    }).catch(function (e) { toast('加载失败：' + (e.message || e)); });
+  }
+  function index(arr) { var m = {}; (arr || []).forEach(function (x) { m[x.student_token] = x; }); return m; }
+
+  function quantRate(sub) {
+    if (!sub || !sub.rows) return null;
+    var total = 0, met = 0;
+    sub.rows.forEach(function (r) {
+      if (r.target === '' || r.target == null) return;
+      total++;
+      var t = parseFloat(r.target), a = parseFloat(r.quantActual);
+      if (!isNaN(t) && !isNaN(a)) { if ((r.direction === 'down') ? (a <= t) : (a >= t)) met++; }
+    });
+    return total ? Math.round(met / total * 100) : null;
+  }
+
+  function render() {
+    var p = state.project, c = state.course || {};
+    var students = p.students || [];
+    var fw = c.framework || [];
+    var info = p.schedule && p.schedule.startDate ? A.phaseInfo({ schedule: p.schedule }) : null;
+    var now = new Date().toISOString().slice(0, 10);
+
+    var h = '';
+    h += '<h1>课后学习迁移 · 汇总报表</h1>';
+    h += '<div class="r-meta">客户：' + A.esc(p.client || '—') + ' ｜ 群体：' + A.esc(p.cohort || '—') +
+         ' ｜ 项目期次：' + A.esc(p.title || '—') +
+         (info ? ' ｜ 时间线：' + info.startStr + ' ~ ' + info.endStr + '（共 ' + info.totalWeeks + ' 周）' : '') +
+         ' ｜ 生成日期：' + now + '</div>';
+
+    /* 一、主题与目标 */
+    h += '<div class="rsec"><h2><span class="n">1</span>课程主题与目标</h2>';
+    h += '<div><b>主题：</b>' + A.esc(c.theme || '—') + '</div>';
+    h += '<div style="margin-top:6px"><b>目标 / 待解决的业务问题：</b>' + A.esc(c.needs || '—') + '</div></div>';
+
+    /* 二、迁移表 */
+    h += '<div class="rsec"><h2><span class="n">2</span>迁移表（框架）</h2>';
+    if (fw.length) {
+      h += '<table class="rgrid"><thead><tr><th>#</th><th>掌握新方法</th><th>应用场景</th><th>具体行动</th><th>目标 / 方向</th><th>改善的绩效指标</th></tr></thead><tbody>';
+      fw.forEach(function (r, i) {
+        var q = r.target !== '' && r.target != null;
+        h += '<tr><td>' + (i + 1) + '</td><td>' + A.esc(r.section || '') + '</td><td>' + A.esc(r.scene || '') + '</td><td>' + A.esc(r.action || '') + '</td>' +
+             '<td>' + (q ? A.esc(r.target) + '（' + (r.direction === 'down' ? '↓' : '↑') + '）' : '—') + '</td><td>' + A.esc(r.note || '') + '</td></tr>';
+      });
+      h += '</tbody></table>';
+    } else h += '<div class="r-meta">（未定义迁移表）</div>';
+    h += '</div>';
+
+    /* 三、完成情况 */
+    h += '<div class="rsec"><h2><span class="n">3</span>完成情况</h2>';
+    h += '<table class="rgrid"><thead><tr><th>学员</th><th>上司</th><th>提交</th><th>上司反馈</th><th>量化达成率</th></tr></thead><tbody>';
+    students.forEach(function (s) {
+      var sub = state.subs[s.token], fb = state.fb[s.token], rate = quantRate(sub);
+      h += '<tr><td>' + A.esc(s.name) + '</td><td>' + A.esc(s.supName || '—') + '</td>' +
+           '<td>' + (sub ? '✅ 已提交' : '⬜ 未提交') + '</td>' +
+           '<td>' + (fb ? '✅ 已反馈' : '⬜ 待反馈') + '</td>' +
+           '<td>' + (rate == null ? '—' : rate + '%') + '</td></tr>';
+    });
+    h += '</tbody></table></div>';
+
+    /* 四、反馈情况 */
+    h += '<div class="rsec"><h2><span class="n">4</span>上司反馈情况</h2>';
+    var anyFb = students.some(function (s) { return state.fb[s.token]; });
+    if (!anyFb) h += '<div class="r-meta">（暂无上司反馈）</div>';
+    students.forEach(function (s) {
+      var fb = state.fb[s.token]; if (!fb) return;
+      h += '<div class="fb" style="margin:10px 0"><div class="who">' + A.esc(s.name) + ' 的上司反馈</div>';
+      h += '<div><b>整体评语：</b>' + A.esc(fb.overall || '') + '</div>';
+      h += '<div style="margin-top:4px"><b>建议：</b></div>';
+      (fb.suggestions || []).forEach(function (g) { h += '<div class="r-meta">· ' + A.esc(g) + '</div>'; });
+      h += '<div style="margin-top:4px"><b>承诺跟进：</b>' + A.esc(fb.commitment || '') + '</div></div>';
+    });
+    h += '</div>';
+
+    /* 五、评级分类 */
+    var ratings = { A: [], B: [], C: [] };
+    students.forEach(function (s) { var rev = state.reviews[s.token]; if (rev && rev.rating) ratings[rev.rating].push(s.name); });
+    h += '<div class="rsec"><h2><span class="n">5</span>评级分类</h2>';
+    h += '<div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:8px">';
+    ['A', 'B', 'C'].forEach(function (k) {
+      h += '<span class="rbadge pill' + k + '">' + k + ' 类 ' + ratings[k].length + ' 人</span>';
+    });
+    h += '</div>';
+    ['A', 'B', 'C'].forEach(function (k) {
+      if (!ratings[k].length) return;
+      h += '<div style="margin:6px 0"><b>' + k + ' 类（' + ratings[k].length + '）：</b>' + A.esc(ratings[k].join('、')) + '</div>';
+    });
+    h += '</div>';
+
+    /* 六、范例知识与复盘萃取 */
+    h += '<div class="rsec"><h2><span class="n">6</span>范例知识与复盘萃取</h2>';
+    var exList = [];
+    students.forEach(function (s) {
+      var rev = state.reviews[s.token];
+      if (rev && rev.exemplar) rev.exemplar.forEach(function (e) { exList.push(Object.assign({}, e, { student: s.name })); });
+    });
+    if (!exList.length) h += '<div class="r-meta">（本期未勾选范例）</div>';
+    else {
+      h += '<div class="eyebrow" style="margin-bottom:6px">优秀范例</div>';
+      h += '<table class="rgrid"><thead><tr><th>学员</th><th>新方法</th><th>行动</th><th>结果影响</th></tr></thead><tbody>';
+      exList.forEach(function (e) {
+        h += '<tr><td>' + A.esc(e.student || '') + '</td><td>' + A.esc(e.section || '') + '</td><td>' + A.esc(e.action || '') + '</td><td>' + A.esc(e.resultImpact || '') + '</td></tr>';
+      });
+      h += '</tbody></table>';
+    }
+    var w = state.wrapup || {};
+    if (w.summary || (w.knowledge && w.knowledge.length)) {
+      h += '<div class="eyebrow" style="margin:14px 0 6px">复盘萃取（后继跟进）</div>';
+      if (w.summary) h += '<div style="margin-bottom:8px"><b>复盘小结：</b>' + A.esc(w.summary) + '</div>';
+      if (w.knowledge && w.knowledge.length) {
+        h += '<table class="rgrid"><thead><tr><th>范例</th><th>后继跟进时间点</th><th>负责人</th><th>可复用场景 / 任务</th></tr></thead><tbody>';
+        w.knowledge.forEach(function (k) {
+          h += '<tr><td>' + A.esc((k.action || '')) + (k.student ? '（' + A.esc(k.student) + '）' : '') + '</td><td>' + A.esc(k.followUp || '—') + '</td><td>' + A.esc(k.owner || '—') + '</td><td>' + A.esc(k.note || '') + '</td></tr>';
+        });
+        h += '</tbody></table>';
+      }
+    }
+    h += '</div>';
+
+    $('report').innerHTML = h;
+    REPORT_HTML = h;
+  }
+
+  /* 导出 */
+  $('btnPrint').addEventListener('click', function () { window.print(); });
+  $('btnDownloadHtml').addEventListener('click', function () {
+    var title = (state.project && state.project.title) || '迁移报表';
+    var full = '<!DOCTYPE html><html lang="zh-CN"><head><meta charset="UTF-8"><title>' + title + '</title>' +
+      '<link rel="stylesheet" href="styles.css"></head><body><div class="wrap">' + REPORT_HTML + '</div></body></html>';
+    var blob = new Blob([full], { type: 'text/html;charset=utf-8' });
+    downloadBlob(blob, '学习迁移汇总报表_' + (new Date().toISOString().slice(0, 10)) + '.html');
+    toast('已下载 HTML 报表');
+  });
+  $('btnDownloadCsv').addEventListener('click', function () {
+    var students = (state.project.students || []);
+    var rows = [['学员', '上司', '已提交', '上司已反馈', '量化达成率', '评级', '讲师评语']];
+    students.forEach(function (s) {
+      var sub = state.subs[s.token], fb = state.fb[s.token], rev = state.reviews[s.token], rate = quantRate(sub);
+      rows.push([s.name, s.supName || '', sub ? '是' : '否', fb ? '是' : '否', rate == null ? '' : rate + '%', rev ? rev.rating : '', rev ? rev.comment : '']);
+    });
+    var csv = '﻿' + rows.map(function (r) { return r.map(function (c) { return '"' + String(c == null ? '' : c).replace(/"/g, '""') + '"'; }).join(','); }).join('\r\n');
+    downloadBlob(new Blob([csv], { type: 'text/csv;charset=utf-8' }), '学习迁移汇总_' + (new Date().toISOString().slice(0, 10)) + '.csv');
+    toast('已下载 CSV');
+  });
+  function downloadBlob(blob, name) {
+    var a = document.createElement('a');
+    a.href = URL.createObjectURL(blob); a.download = name; a.click();
+    setTimeout(function () { URL.revokeObjectURL(a.href); }, 1000);
+  }
+})();
+</script>
+</body>
+</html>

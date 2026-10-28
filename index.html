@@ -136,18 +136,42 @@
         <div><label>截止日期</label><input type="text" id="pEnd" placeholder="2026-01-15" /></div>
       </div>
       <div class="eyebrow" style="margin-top:16px">学员与上司名单</div>
-      <p class="meta">每行一位学员，填写「学员姓名」与「其直接上司姓名」。系统自动生成令牌与免登录链接。</p>
+      <p class="meta">可逐条添加，也可「批量导入」20+ 人：粘贴文本 / 上传 CSV（每行「学员姓名, 上司姓名」）。系统自动生成令牌与免登录链接。</p>
+      <button class="btn ghost sm" id="btnBatchToggle">批量导入名单</button>
+      <div id="batchPanel" class="hidden" style="margin:10px 0;padding:12px;border:1px dashed var(--line);border-radius:10px">
+        <p class="meta">每行一位：<b>学员姓名, 上司姓名</b>（中文或英文逗号均可；也可只填学员姓名）。也支持上传 .csv 文件。</p>
+        <textarea id="batchText" rows="6" style="width:100%;font:inherit" placeholder="张三, 李经理&#10;王五, 赵总监&#10;..."></textarea>
+        <div style="display:flex;gap:8px;margin-top:8px;flex-wrap:wrap;align-items:center">
+          <button class="btn ghost sm" id="btnParseBatch">解析并填入名单</button>
+          <label class="btn ghost sm" style="cursor:pointer;margin:0">上传 CSV<input type="file" id="batchFile" accept=".csv,text/csv" style="display:none"></label>
+          <span id="batchHint" class="meta"></span>
+        </div>
+      </div>
       <div id="roster"></div>
       <button class="btn ghost sm" id="btnAddStudent" style="margin-top:8px">+ 加一位学员</button>
       <div id="projErr" class="error"></div>
       <div style="margin-top:14px"><button class="btn" id="btnGenLinks">生成链接并保存</button></div>
     </div>
 
+    <div class="card" id="timelineCard" style="margin-top:16px">
+      <div class="eyebrow">课后迁移时间线（4 阶段）</div>
+      <p class="meta">设定开始日期与每阶段周数，系统自动推算每位学员 / 上司「当前该做什么」。默认：①学员填写 ②上司反馈 ③学员提交 ④讲师评价 / 选案例。</p>
+      <div style="display:flex;gap:12px;align-items:center;margin-bottom:8px;flex-wrap:wrap">
+        <div style="display:flex;align-items:center;gap:6px"><label style="margin:0">开始日期</label><input type="text" id="pStart" placeholder="2026-01-05" style="width:130px"></div>
+        <div class="meta" id="timelineSummary"></div>
+      </div>
+      <div id="phaseTable"></div>
+    </div>
+
     <div class="card hidden" id="linksCard">
       <div class="eyebrow">免登录链接（直接发给学员 / 上司）</div>
       <p class="meta">学员链接含填写令牌；上司链接在其基础上加「上司令牌」。无需账号，点开即填。</p>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:8px">
+        <button class="btn ghost sm" id="btnCopyAll">复制全部链接</button>
+        <button class="btn ghost sm" id="btnDownloadCsv">下载链接清单 CSV</button>
+      </div>
       <div id="linkList"></div>
-      <div class="note">提示：复制链接用微信 / 邮件发给对应的人。学员提交后，上司会收到自己的链接去写反馈；你在「评价固化」里能看到全部结果。</div>
+      <div class="note">提示：用「下载链接清单 CSV」一次性拿到全班链接，可直接邮件合并群发。学员提交后，上司会收到自己的链接去写反馈；你在「评价固化」里能看到全部结果。</div>
     </div>
   </section>
 
@@ -170,7 +194,7 @@
   A.init();
 
   var BASE = location.origin + location.pathname.replace(/[^/]*$/, '');
-  var state = { course: null, projectId: null, rows: [], roster: [] };
+  var state = { course: null, projectId: null, rows: [], roster: [], schedule: null };
 
   function $(id) { return document.getElementById(id); }
   function show(view) {
@@ -416,11 +440,10 @@
   }
   $('btnNewProject').addEventListener('click', function () {
     if (!state.course.id) { toast('请先保存课程'); return; }
-    state.projectId = null; state.roster = [];
+    state.projectId = null; state.roster = []; state.schedule = A.defaultSchedule(); state.schedule.startDate = '';
     $('pTitle').value = ''; $('pCohort').value = state.course.cohort || '';
-    $('pStart').value = ''; $('pEnd').value = '';
     $('linksCard').classList.add('hidden');
-    renderRoster(); show('project');
+    renderRoster(); renderPhases(); show('project');
   });
   $('btnBackCourse').addEventListener('click', function () { renderCourse(); show('course'); loadProjects(state.course.id); });
 
@@ -444,6 +467,77 @@
   }
   $('btnAddStudent').addEventListener('click', function () { state.roster.push({ name: '', sup: '' }); renderRoster(); });
 
+  /* ------- 批量导入名单（粘贴 / CSV） ------- */
+  $('btnBatchToggle').addEventListener('click', function () {
+    $('batchPanel').classList.toggle('hidden');
+  });
+  function parseRosterText(text) {
+    var lines = (text || '').split(/\r?\n/);
+    var out = [];
+    lines.forEach(function (ln) {
+      ln = ln.trim(); if (!ln) return;
+      var parts = ln.split(/[,，]/).map(function (s) { return s.trim(); });
+      if (parts[0]) out.push({ name: parts[0], sup: parts[1] || '' });
+    });
+    return out;
+  }
+  $('btnParseBatch').addEventListener('click', function () {
+    var parsed = parseRosterText($('batchText').value);
+    if (!parsed.length) { $('batchHint').textContent = '没有解析到有效行（每行：学员姓名, 上司姓名）'; return; }
+    // 合并去重（按姓名）
+    var seen = {};
+    state.roster.forEach(function (s) { if (s.name) seen[s.name] = true; });
+    parsed.forEach(function (p) { if (!seen[p.name]) { state.roster.push(p); seen[p.name] = true; } });
+    $('batchHint').textContent = '已加入 ' + parsed.length + ' 人，当前共 ' + state.roster.length + ' 人。';
+    renderRoster();
+  });
+  $('batchFile').addEventListener('change', function () {
+    var f = this.files && this.files[0]; this.value = '';
+    if (!f) return;
+    f.text().then(function (txt) {
+      $('batchText').value = txt;
+      $('btnParseBatch').click();
+    }).catch(function () { $('batchHint').textContent = '读取文件失败'; });
+  });
+
+  /* ------- 四阶段时间线编辑 ------- */
+  function renderPhases() {
+    var sch = state.schedule || A.defaultSchedule();
+    $('pStart').value = sch.startDate || '';
+    var box = $('phaseTable'); box.innerHTML = '';
+    (sch.phases || []).forEach(function (p, i) {
+      var row = document.createElement('div'); row.className = 'phase-row';
+      row.setAttribute('data-key', p.key || ('p' + i));
+      row.style.cssText = 'display:flex;gap:8px;align-items:center;margin:6px 0';
+      row.innerHTML = '<span class="pill">' + (i + 1) + '</span>' +
+        '<input data-f="label" value="' + A.esc(p.label) + '" style="flex:1" placeholder="阶段名">' +
+        '<span class="meta" style="white-space:nowrap">周数</span>' +
+        '<input data-f="weeks" type="number" min="1" max="8" value="' + (p.weeks || 1) + '" style="width:64px">';
+      box.appendChild(row);
+    });
+    updateTimelineSummary();
+  }
+  function readPhases() {
+    var phases = [];
+    $('phaseTable').querySelectorAll('.phase-row').forEach(function (row) {
+      phases.push({
+        key: row.getAttribute('data-key'),
+        label: row.querySelector('[data-f="label"]').value.trim() || ('阶段' + (phases.length + 1)),
+        weeks: Math.max(1, Math.round(+row.querySelector('[data-f="weeks"]').value) || 1)
+      });
+    });
+    return phases;
+  }
+  function updateTimelineSummary() {
+    var sch = { startDate: $('pStart').value.trim(), phases: readPhases() };
+    if (!sch.startDate) { $('timelineSummary').textContent = ''; return; }
+    var info = A.phaseInfo({ schedule: sch });
+    if (!info) { $('timelineSummary').textContent = ''; return; }
+    $('timelineSummary').textContent = '共 ' + info.totalWeeks + ' 周（' + info.startStr + ' ~ ' + info.endStr + '）';
+  }
+  $('pStart').addEventListener('input', updateTimelineSummary);
+  $('phaseTable').addEventListener('input', updateTimelineSummary);
+
   $('btnGenLinks').addEventListener('click', function () {
     var title = $('pTitle').value.trim();
     if (!title) { $('projErr').textContent = '请填写项目名称'; return; }
@@ -452,25 +546,29 @@
     });
     if (!students.length) { $('projErr').textContent = '请至少添加一位学员'; return; }
     $('projErr').textContent = '';
+    var schedule = { startDate: $('pStart').value.trim() || null, phases: readPhases(), closed: false };
     var proj = {
       id: state.projectId || undefined,
       course_id: state.course.id,
       title: title, client: state.course.client, cohort: $('pCohort').value.trim() || state.course.cohort,
       start_date: $('pStart').value.trim() || null, end_date: $('pEnd').value.trim() || null,
-      students: students
+      students: students, schedule: schedule
     };
     A.saveProject(proj).then(function (saved) {
-      state.projectId = saved.id;
+      state.projectId = saved.id; state.schedule = saved.schedule;
       renderLinks(saved);
       toast('已生成 ' + students.length + ' 条学员链接');
     }).catch(function (e) { $('projErr').textContent = '保存失败：' + (e.message || e); });
   });
 
+  var lastLinks = [];
   function renderLinks(p) {
     var list = $('linkList'); list.innerHTML = '';
+    lastLinks = [];
     (p.students || []).forEach(function (s) {
       var sUrl = BASE + 'student.html?pid=' + p.id + '&tok=' + s.token;
       var supUrl = BASE + 'supervisor.html?pid=' + p.id + '&tok=' + s.token + '&suptok=' + s.supToken;
+      lastLinks.push({ name: s.name, sup: s.supName || '', sUrl: sUrl, supUrl: supUrl });
       var div = document.createElement('div'); div.style.cssText = 'margin:10px 0;padding:10px;border:1px solid var(--line);border-radius:10px';
       div.innerHTML = '<div class="who"><b>' + esc(s.name) + '</b>　上司：' + esc(s.supName || '—') + '</div>' +
         '<div class="linkrow"><span class="pill">学员</span><input readonly value="' + esc(sUrl) + '"><button class="btn ghost sm copybtn" data-c="' + esc(sUrl) + '">复制</button></div>' +
@@ -482,8 +580,34 @@
     });
     $('linksCard').classList.remove('hidden');
   }
+  function csvCell(t) { return '"' + String(t == null ? '' : t).replace(/"/g, '""') + '"'; }
+  $('btnCopyAll').addEventListener('click', function () {
+    if (!lastLinks.length) return;
+    var text = lastLinks.map(function (l) {
+      return (l.name || '') + (l.sup ? '（上司：' + l.sup + '）' : '') + '\n  学员：' + l.sUrl + '\n  上司：' + l.supUrl;
+    }).join('\n\n');
+    if (navigator.clipboard) navigator.clipboard.writeText(text).then(function () { toast('已复制全部 ' + lastLinks.length + ' 条链接'); });
+    else toast('请手动复制');
+  });
+  $('btnDownloadCsv').addEventListener('click', function () {
+    if (!lastLinks.length) return;
+    var rows = [['学员姓名', '上司姓名', '学员填写链接', '上司反馈链接']];
+    lastLinks.forEach(function (l) { rows.push([l.name, l.sup, l.sUrl, l.supUrl]); });
+    var csv = '﻿' + rows.map(function (r) { return r.map(csvCell).join(','); }).join('\r\n');
+    var blob = new Blob([csv], { type: 'text/csv;charset=utf-8' });
+    var a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = '迁移项目链接清单_' + (new Date().toISOString().slice(0, 10)) + '.csv';
+    a.click();
+    setTimeout(function () { URL.revokeObjectURL(a.href); }, 1000);
+    toast('已下载 CSV 清单');
+  });
   function openProject(id) {
-    A.getProject(id).then(function (p) { state.projectId = p.id; renderLinks(p); show('project'); });
+    A.getProject(id).then(function (p) {
+      state.projectId = p.id; state.schedule = p.schedule || A.defaultSchedule();
+      $('pTitle').value = p.title || ''; $('pCohort').value = p.cohort || state.course.cohort || '';
+      renderLinks(p); renderPhases(); show('project');
+    });
   }
   function copy(text) {
     if (navigator.clipboard) navigator.clipboard.writeText(text).then(function () { toast('已复制'); });

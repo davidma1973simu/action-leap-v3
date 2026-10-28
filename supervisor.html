@@ -23,6 +23,12 @@
       <p id="hStudent"></p>
     </div>
 
+    <div class="card hidden" id="timelineCard">
+      <div class="eyebrow">课后迁移时间线</div>
+      <div id="timelineBar" class="timeline"></div>
+      <div id="timelineNow"></div>
+    </div>
+
     <div class="card">
       <div class="eyebrow">学员已提交的迁移成果（只读）</div>
       <div id="subBody"></div>
@@ -87,10 +93,38 @@
     $('view-main').classList.remove('hidden');
   }).catch(function (e) { showErr('加载失败：' + (e.message || e)); });
 
+  function renderTimeline(schedule, role) {
+    if (!schedule || !schedule.startDate) return;
+    var info = A.phaseInfo({ schedule: schedule });
+    if (!info) return;
+    var HINTS = {
+      student: { fill: '现在该：填写你的迁移成果（补「结果影响 + 实际值」）', sup: '现在该：你的上司正在给反馈，可先安心推进工作', submit: '现在该：确认成果无误后正式提交', review: '现在该：等待讲师评价与案例评选' },
+      sup: { fill: '现在该：等待学员填写完成', sup: '现在该：给学员写三段式反馈（评语 / 建议 / 承诺跟进）', submit: '现在该：如还有补充可继续完善反馈', review: '现在该：等待讲师评价' }
+    };
+    $('timelineCard').classList.remove('hidden');
+    var bar = $('timelineBar'); bar.innerHTML = '';
+    info.phases.forEach(function (p) {
+      var d = document.createElement('div');
+      d.className = 'ph ' + p.status;
+      d.innerHTML = '<div class="pn">第 ' + (p.index + 1) + ' 阶段</div><div class="pl">' + A.esc(p.label) + '</div><div class="pw">' + p.weeks + ' 周 · ' + p.startStr + '~' + p.endStr + '</div>';
+      bar.appendChild(d);
+    });
+    var now = $('timelineNow');
+    if (info.closed) { now.className = 'tl-closed'; now.textContent = '✓ 本项目已收尾。'; }
+    else if (info.ended) { now.className = 'tl-closed'; now.textContent = '全部阶段已结束。'; }
+    else if (info.currentIndex < 0) { now.className = 'tl-now'; now.textContent = '时间线尚未开始（开始日 ' + info.startStr + '）。'; }
+    else {
+      now.className = 'tl-now';
+      var h = (HINTS[role] || {})[info.phases[info.currentIndex].key] || '';
+      now.innerHTML = '当前：第 ' + (info.currentIndex + 1) + ' 阶段 · <b>' + A.esc(info.currentLabel) + '</b>　' + A.esc(h);
+    }
+  }
+
   function renderHeader() {
     $('hClient').textContent = (data.project.client || '') + ' · ' + (data.project.cohort || '');
     $('hTitle').textContent = data.project.title || '学员迁移成果反馈';
     $('hStudent').textContent = '致 ' + (data.student.name || '学员') + ' 的直接上司';
+    renderTimeline(data.project.schedule, 'sup');
   }
 
   function renderSubmission() {

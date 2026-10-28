@@ -99,7 +99,8 @@
       course_id: p.course_id, title: p.title || '',
       client: p.client || '', cohort: p.cohort || '',
       start_date: p.start_date || null, end_date: p.end_date || null,
-      students: p.students || []
+      students: p.students || [],
+      schedule: p.schedule || {}, wrapup: p.wrapup || {}
     };
     if (p.id) {
       return getCloud().database.from('projects').update(payload).eq('id', p.id)
@@ -111,6 +112,69 @@
   function deleteProject(id) {
     return getCloud().database.from('projects').delete().eq('id', id)
       .then(function (r) { if (r.error) throw r.error; });
+  }
+
+  /* 时间线（4 阶段）与复盘萃取 */
+  function defaultSchedule() {
+    var d = new Date();
+    return {
+      startDate: d.toISOString().slice(0, 10),
+      phases: [
+        { key: 'fill', label: '学员填写', weeks: 1 },
+        { key: 'sup', label: '上司反馈', weeks: 1 },
+        { key: 'submit', label: '学员提交', weeks: 1 },
+        { key: 'review', label: '讲师评价 / 案例', weeks: 1 }
+      ],
+      closed: false
+    };
+  }
+  function isoDate(d) { return d.toISOString().slice(0, 10); }
+  function parseDate(s) {
+    if (!s) return null;
+    var d = new Date(s + (s.length === 10 ? 'T00:00:00' : ''));
+    return isNaN(d.getTime()) ? null : d;
+  }
+  function phaseInfo(project, nowDate) {
+    nowDate = nowDate || new Date();
+    var sch = (project && project.schedule) || {};
+    var start = parseDate(sch.startDate);
+    if (!start) return null;
+    var phases = (sch.phases && sch.phases.length)
+      ? sch.phases
+      : defaultSchedule().phases;
+    var dayMs = 86400000;
+    var cursor = new Date(start.getTime());
+    var list = [];
+    var totalDays = 0;
+    phases.forEach(function (p, i) {
+      var w = Math.max(1, Math.round(+p.weeks) || 1);
+      var s = new Date(cursor.getTime());
+      var e = new Date(cursor.getTime() + w * 7 * dayMs);
+      list.push({ index: i, key: p.key, label: p.label, weeks: w, start: s, end: e, startStr: isoDate(s), endStr: isoDate(e) });
+      cursor = e; totalDays += w * 7;
+    });
+    var endAll = new Date(start.getTime() + totalDays * dayMs);
+    var statusList = list.map(function (p) {
+      if (nowDate >= p.end) return 'done';
+      if (nowDate >= p.start) return 'active';
+      return 'todo';
+    });
+    var idx = -1;
+    list.forEach(function (p, i) { if (nowDate >= p.start && nowDate < p.end) idx = i; });
+    var currentLabel = idx >= 0 ? list[idx].label
+      : (nowDate < start ? '尚未开始' : '已全部阶段结束');
+    return {
+      hasSchedule: true, startStr: isoDate(start), endStr: isoDate(endAll),
+      phases: list.map(function (p, i) { return Object.assign({}, p, { status: statusList[i] }); }),
+      currentIndex: idx, currentLabel: currentLabel,
+      started: nowDate >= start, ended: nowDate >= endAll,
+      closed: !!sch.closed, totalWeeks: Math.round(totalDays / 7)
+    };
+  }
+  function saveWrapup(pid, wrapup) {
+    return getCloud().database.from('projects').update({ wrapup: wrapup })
+      .eq('id', pid).select().single()
+      .then(function (r) { if (r.error) throw r.error; return r.data; });
   }
 
   /* ---------------- 免登录 RPC（学员 / 上司，令牌校验） ---------------- */
@@ -216,6 +280,7 @@
     auth: auth,
     listCourses: listCourses, getCourse: getCourse, saveCourse: saveCourse, deleteCourse: deleteCourse,
     listProjects: listProjects, getProject: getProject, saveProject: saveProject, deleteProject: deleteProject,
+    defaultSchedule: defaultSchedule, phaseInfo: phaseInfo, saveWrapup: saveWrapup,
     getProjectForStudent: getProjectForStudent, saveSubmission: saveSubmission,
     getSubmissionForSup: getSubmissionForSup, saveSupFeedback: saveSupFeedback,
     getSubmissions: getSubmissions, getFeedback: getFeedback, getReviews: getReviews,

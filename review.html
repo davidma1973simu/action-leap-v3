@@ -44,6 +44,13 @@
       <p>逐位学员查看迁移成果与上司反馈，给出你的评价；优秀行动可一键固化为组织范例，沉淀回课程模版库。</p>
     </div>
 
+    <div class="card hidden" id="timelineCard">
+      <div class="eyebrow">课后迁移时间线</div>
+      <div id="timelineBar" class="timeline"></div>
+      <div id="timelineNow"></div>
+      <div id="finalizeBox" style="margin-top:10px"></div>
+    </div>
+
     <div class="card">
       <div class="eyebrow">整体概览</div>
       <div id="stats" class="grid cols-3" style="margin-top:8px"></div>
@@ -51,6 +58,20 @@
 
     <div id="revList"></div>
     <div id="revEmpty" class="empty hidden">该项目还没有学员提交。学员提交后，这里会逐位呈现。</div>
+
+    <div class="card" id="wrapupCard" style="margin-top:18px">
+      <div class="eyebrow">项目复盘与知识萃取（讲师 + 甲方培训负责人共用）</div>
+      <p class="meta">把本期跑通的「优秀做法」沉淀成可复用的组织资产：写下复盘小结，并为每条范例标注「后继跟进时间点 + 负责人」，方便下一期直接调用与追踪。</p>
+      <label>复盘小结（这期迁移做对了什么 / 卡在哪 / 下期怎么改）</label>
+      <textarea id="wrapSummary" rows="3" placeholder="例：跨部门协同类行动达成率最高；量化目标偏理想，下期建议从「相对值」切入。"></textarea>
+      <div class="eyebrow" style="margin-top:14px">范例知识 · 后继跟进</div>
+      <div id="wrapExList"></div>
+      <div id="wrapEmpty" class="note hidden">还没有勾选范例。回到上方逐位学员点「★ 选范例并固化到模版库」后，这里会自动列出可萃取的成果。</div>
+      <div style="margin-top:14px;display:flex;gap:10px;flex-wrap:wrap">
+        <button class="btn" id="btnSaveWrap">保存复盘与萃取</button>
+        <a class="btn ghost" id="btnReport" href="report.html?pid=">导出汇总报表</a>
+      </div>
+    </div>
   </section>
 
 </div>
@@ -69,7 +90,7 @@
 
   var q = new URLSearchParams(location.search);
   var pid = q.get('pid');
-  var state = { project: null, subs: {}, fb: {}, reviews: {} };
+  var state = { project: null, subs: {}, fb: {}, reviews: {}, wrapup: {} };
 
   function $(id) { return document.getElementById(id); }
   function show(view) { ['login', 'review'].forEach(function (v) { $('view-' + v).classList.toggle('hidden', v !== view); }); }
@@ -115,17 +136,44 @@
       state.subs = indexByToken(res[1]);
       state.fb = indexByToken(res[2]);
       state.reviews = indexByToken(res[3]);
+      state.wrapup = res[0].wrapup || {};
       render();
     }).catch(function (e) { toast('加载失败：' + (e.message || e)); });
   }
   function indexByToken(arr) { var m = {}; (arr || []).forEach(function (x) { m[x.student_token] = x; }); return m; }
 
+  function renderTimeline(schedule) {
+    if (!schedule || !schedule.startDate) return;
+    var info = A.phaseInfo({ schedule: schedule });
+    if (!info) return;
+    $('timelineCard').classList.remove('hidden');
+    var bar = $('timelineBar'); bar.innerHTML = '';
+    info.phases.forEach(function (p) {
+      var d = document.createElement('div');
+      d.className = 'ph ' + p.status;
+      d.innerHTML = '<div class="pn">第 ' + (p.index + 1) + ' 阶段</div><div class="pl">' + A.esc(p.label) + '</div><div class="pw">' + p.weeks + ' 周 · ' + p.startStr + '~' + p.endStr + '</div>';
+      bar.appendChild(d);
+    });
+    var now = $('timelineNow');
+    var fb = $('finalizeBox');
+    if (info.closed) { now.className = 'tl-closed'; now.textContent = '✓ 本项目已收尾。'; fb.innerHTML = ''; }
+    else if (info.ended) {
+      now.className = 'tl-now'; now.innerHTML = '全部阶段已结束，可<b>收尾项目</b>并导出报表。';
+      fb.innerHTML = '<button class="btn sm" id="btnFinalize">收尾项目</button>';
+      var b = $('btnFinalize'); if (b) b.addEventListener('click', finalizeProject);
+    } else if (info.currentIndex < 0) { now.className = 'tl-now'; now.textContent = '时间线尚未开始（开始日 ' + info.startStr + '）。'; fb.innerHTML = ''; }
+    else { now.className = 'tl-now'; now.innerHTML = '当前：第 ' + (info.currentIndex + 1) + ' 阶段 · <b>' + A.esc(info.currentLabel) + '</b>'; fb.innerHTML = ''; }
+  }
+
   function render() {
     var p = state.project;
     $('rClient').textContent = (p.client || '') + ' · ' + (p.cohort || '');
     $('rTitle').textContent = p.title || '评价固化';
+    renderTimeline(p.schedule);
     renderStats();
     renderStudents();
+    renderWrapup();
+    $('btnReport').setAttribute('href', 'report.html?pid=' + pid);
   }
 
   function renderStats() {
@@ -283,6 +331,64 @@
       toast('已固化 ' + exArr.length + ' 条范例到该课程的「模版库」（工作台打开这门课程即可看到）');
     }).catch(function (e) { toast('固化失败：' + (e.message || e)); });
   }
+
+  /* ------- 项目复盘与知识萃取 ------- */
+  function collectExemplars() {
+    var list = [];
+    (state.project.students || []).forEach(function (s) {
+      var rev = state.reviews[s.token];
+      if (rev && rev.exemplar && rev.exemplar.length) {
+        rev.exemplar.forEach(function (e) {
+          list.push(Object.assign({}, e, { student: s.name, studentToken: s.token }));
+        });
+      }
+    });
+    return list;
+  }
+  function renderWrapup() {
+    var ex = collectExemplars();
+    var box = $('wrapExList'); box.innerHTML = '';
+    $('wrapEmpty').classList.toggle('hidden', ex.length > 0);
+    var knowledge = (state.wrapup && state.wrapup.knowledge) || [];
+    ex.forEach(function (e, i) {
+      var found = knowledge.find(function (k) { return k.id === e.id; }) || {};
+      var row = document.createElement('div'); row.className = 'fb';
+      row.innerHTML =
+        '<div class="who"><span class="pill">' + A.esc(e.section || '范例') + '</span> &nbsp;' + A.esc(e.action || '') + '</div>' +
+        '<div class="meta">学员：' + A.esc(e.student || '') + (e.resultImpact ? ' · ' + A.esc((e.resultImpact || '').slice(0, 40)) : '') + '</div>' +
+        '<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px">' +
+          '<div style="flex:1;min-width:150px"><label style="font-size:12px">后继跟进时间点</label><input type="date" data-i="' + i + '" data-f="followUp" value="' + A.esc(found.followUp || '') + '"></div>' +
+          '<div style="flex:1;min-width:150px"><label style="font-size:12px">负责人</label><input data-i="' + i + '" data-f="owner" value="' + A.esc(found.owner || '') + '" placeholder="如：李经理 / HR"></div>' +
+        '</div>' +
+        '<div style="margin-top:6px"><label style="font-size:12px">可复用场景 / 任务说明</label><input data-i="' + i + '" data-f="note" value="' + A.esc(found.note || '') + '" placeholder="这条范例未来可用在哪些场景"></div>';
+      box.appendChild(row);
+    });
+    $('wrapSummary').value = (state.wrapup && state.wrapup.summary) || '';
+  }
+  function saveWrapup() {
+    var ex = collectExemplars();
+    var knowledge = ex.map(function (e, i) {
+      return {
+        id: e.id, section: e.section, action: e.action, scene: e.scene, resultImpact: e.resultImpact, student: e.student,
+        followUp: (document.querySelector('[data-i="' + i + '"][data-f="followUp"]') || {}).value || '',
+        owner: (document.querySelector('[data-i="' + i + '"][data-f="owner"]') || {}).value || '',
+        note: (document.querySelector('[data-i="' + i + '"][data-f="note"]') || {}).value || ''
+      };
+    });
+    var wrap = { summary: $('wrapSummary').value.trim(), knowledge: knowledge, createdAt: new Date().toISOString() };
+    A.saveWrapup(pid, wrap).then(function (saved) {
+      state.wrapup = saved.wrapup || wrap;
+      toast('复盘与萃取已保存');
+    }).catch(function (e) { toast('保存失败：' + (e.message || e)); });
+  }
+  function finalizeProject() {
+    var p = state.project;
+    p.schedule = p.schedule || {}; p.schedule.closed = true;
+    A.saveProject(p).then(function (s) {
+      state.project = s; renderTimeline(s.schedule); toast('项目已收尾');
+    }).catch(function (e) { toast('收尾失败：' + (e.message || e)); });
+  }
+  $('btnSaveWrap').addEventListener('click', saveWrapup);
 })();
 </script>
 </body>

@@ -134,3 +134,17 @@ table.one .idx { color: var(--ink-faint); width: 30px; text-align: center; }
 /* 学员填写表 */
 .filltable td .lbl { font-size: 12px; color: var(--ink-faint); display: block; margin-bottom: 3px; }
 .pill { display:inline-block; font-size:11px; padding:2px 8px; border-radius:999px; background:var(--indigo-soft); color:var(--indigo); font-weight:700; }
+
+/* 时间线进度条（四阶段） */
+.timeline { display: flex; gap: 8px; flex-wrap: wrap; margin: 14px 0 2px; }
+.timeline .ph { flex: 1; min-width: 130px; border: 1.5px solid var(--line); border-radius: var(--r-sm); padding: 9px 11px; background: var(--card); transition: .15s; }
+.timeline .ph .pn { font-size: 12px; color: var(--ink-faint); }
+.timeline .ph .pl { font-weight: 700; font-size: 14px; margin-top: 2px; }
+.timeline .ph .pw { font-size: 11px; color: var(--ink-soft); margin-top: 2px; }
+.timeline .ph.done { background: rgba(47,163,124,.10); border-color: var(--ok); }
+.timeline .ph.done .pn { color: var(--ok); }
+.timeline .ph.active { border-color: var(--primary); background: rgba(255,122,77,.10); box-shadow: 0 0 0 3px rgba(255,122,77,.14); }
+.timeline .ph.active .pn { color: var(--primary-d); }
+.tl-now { margin-top: 8px; font-size: 13px; color: var(--ink-soft); }
+.tl-now b { color: var(--primary-d); }
+.tl-closed { margin-top: 8px; font-size: 13px; color: var(--ok); font-weight: 600; }

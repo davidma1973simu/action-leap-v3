@@ -23,6 +23,12 @@
       <p id="hStudent"></p>
     </div>
 
+    <div class="card hidden" id="timelineCard">
+      <div class="eyebrow">课后迁移时间线</div>
+      <div id="timelineBar" class="timeline"></div>
+      <div id="timelineNow"></div>
+    </div>
+
     <div class="card">
       <div class="eyebrow">怎么填（约 5 分钟）</div>
       <p class="meta">这张表是从你上课的内容里抽出的「要真正用起来的行动」。每行只需补两栏：<b>结果影响</b> 和 <b>实际值</b>（有量化目标的才填实际值）。困难、未来应用可选填。全部填完才能提交；上司会据此给你反馈。</p>
@@ -91,10 +97,38 @@
     });
   }
 
+  function renderTimeline(schedule, role) {
+    if (!schedule || !schedule.startDate) return;
+    var info = A.phaseInfo({ schedule: schedule });
+    if (!info) return;
+    var HINTS = {
+      student: { fill: '现在该：填写你的迁移成果（补「结果影响 + 实际值」）', sup: '现在该：你的上司正在给反馈，可先安心推进工作', submit: '现在该：确认成果无误后正式提交', review: '现在该：等待讲师评价与案例评选' },
+      sup: { fill: '现在该：等待学员填写完成', sup: '现在该：给学员写三段式反馈（评语 / 建议 / 承诺跟进）', submit: '现在该：如还有补充可继续完善反馈', review: '现在该：等待讲师评价' }
+    };
+    $('timelineCard').classList.remove('hidden');
+    var bar = $('timelineBar'); bar.innerHTML = '';
+    info.phases.forEach(function (p) {
+      var d = document.createElement('div');
+      d.className = 'ph ' + p.status;
+      d.innerHTML = '<div class="pn">第 ' + (p.index + 1) + ' 阶段</div><div class="pl">' + A.esc(p.label) + '</div><div class="pw">' + p.weeks + ' 周 · ' + p.startStr + '~' + p.endStr + '</div>';
+      bar.appendChild(d);
+    });
+    var now = $('timelineNow');
+    if (info.closed) { now.className = 'tl-closed'; now.textContent = '✓ 本项目已收尾。'; }
+    else if (info.ended) { now.className = 'tl-closed'; now.textContent = '全部阶段已结束。'; }
+    else if (info.currentIndex < 0) { now.className = 'tl-now'; now.textContent = '时间线尚未开始（开始日 ' + info.startStr + '）。'; }
+    else {
+      now.className = 'tl-now';
+      var h = (HINTS[role] || {})[info.phases[info.currentIndex].key] || '';
+      now.innerHTML = '当前：第 ' + (info.currentIndex + 1) + ' 阶段 · <b>' + A.esc(info.currentLabel) + '</b>　' + A.esc(h);
+    }
+  }
+
   function render() {
     $('hClient').textContent = (data.project.client || '') + ' · ' + (data.project.cohort || '');
     $('hTitle').textContent = data.project.title || '课后迁移表';
     $('hStudent').textContent = '学员：' + (data.student.name || '');
+    renderTimeline(data.project.schedule, 'student');
 
     // 若此前已提交，展示已提交态（仍可编辑后重新提交更新）
     var done = data.submission && data.submission.completed;
