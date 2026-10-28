@@ -79,18 +79,20 @@
 
     <div class="card">
       <div style="display:flex;gap:10px;align-items:center">
-        <div class="eyebrow" style="margin:0">一张迁移表（模块 / 场景 / 行动 / 量化验收）</div>
+        <div class="eyebrow" style="margin:0">一张迁移表（掌握新方法 / 场景 / 行动 / 量化验收）</div>
         <div class="spacer"></div>
         <button class="btn ghost sm" id="btnAIDraft">AI 起草</button>
+        <button class="btn ghost sm" id="btnUploadFile">上传课程文件起草</button>
+        <input type="file" id="fileInput" accept=".txt,.md,.docx" class="hidden">
         <button class="btn ghost sm" id="btnAddRow">+ 加一行</button>
       </div>
-      <p class="meta">每行 = 一个可衡量的行动。学员填写时只需补「结果 + 实际值」两栏，降低负担。</p>
+      <p class="meta">每行 = 一个要掌握的新方法在真实场景中的行动。学员填写时只需补「结果 + 实际值」两栏，降低负担。</p>
       <div class="note" id="aiNote" class="hidden"></div>
       <div style="overflow:auto">
         <table class="one" id="fwTable">
           <thead><tr>
-            <th class="idx">#</th><th>模块</th><th>应用场景</th><th>具体行动</th>
-            <th>基线</th><th>目标</th><th>单位</th><th>方向</th><th>量化指标名</th><th></th>
+            <th class="idx">#</th><th>掌握新方法</th><th>应用场景</th><th>具体行动</th>
+            <th>目标</th><th>方向</th><th>改善的绩效指标</th><th></th>
           </tr></thead>
           <tbody id="fwBody"></tbody>
         </table>
@@ -98,6 +100,13 @@
       <div id="fwErr" class="error"></div>
       <div style="margin-top:14px"><button class="btn" id="btnSaveCourse">保存课程</button>
         <button class="btn ghost" id="btnDelCourse" style="margin-left:8px">删除课程</button></div>
+    </div>
+
+    <div class="card">
+      <div class="eyebrow">课程模版库（评价阶段固化的优秀范例）</div>
+      <p class="meta">在「评价固化」里点「★ 选为范例并固化到模版库」的学员成果，会沉淀在这里——这是这门课的组织资产，可直接复用到下一期。</p>
+      <div id="tplList"></div>
+      <div id="tplEmpty" class="empty hidden">还没有固化任何范例。学员提交并在评价页勾选范例后，这里会自动积累。</div>
     </div>
 
     <div class="card">
@@ -255,7 +264,21 @@
     var c = state.course;
     $('cClient').value = c.client || ''; $('cCohort').value = c.cohort || '';
     $('cTheme').value = c.theme || ''; $('cNeeds').value = c.needs || '';
-    renderFw();
+    renderFw(); renderTemplates();
+  }
+  function renderTemplates() {
+    var box = $('tplList'); if (!box) return;
+    var tpls = state.course.templates || [];
+    box.innerHTML = '';
+    $('tplEmpty').classList.toggle('hidden', tpls.length > 0);
+    tpls.forEach(function (t) {
+      var d = document.createElement('div'); d.className = 'fb';
+      d.innerHTML = '<div class="who"><span class="pill">' + esc(t.section || '行动') + '</span> &nbsp;' + esc(t.action || '') + '</div>' +
+        '<div class="meta">场景：' + esc(t.scene || '—') + '</div>' +
+        (t.resultImpact ? '<div style="margin-top:4px">' + esc(t.resultImpact) + '</div>' : '') +
+        '<div class="meta" style="margin-top:4px">范例来源：' + esc(t.source || '学员') + ' · ' + esc((t.createdAt || '').slice(0, 10)) + '</div>';
+      box.appendChild(d);
+    });
   }
   function renderFw() {
     var body = $('fwBody'); body.innerHTML = '';
@@ -263,14 +286,12 @@
       var tr = document.createElement('tr');
       tr.innerHTML =
         '<td class="idx">' + (i + 1) + '</td>' +
-        '<td><input data-i="' + i + '" data-f="section" value="' + esc(r.section) + '"></td>' +
-        '<td><input data-i="' + i + '" data-f="scene" value="' + esc(r.scene) + '"></td>' +
-        '<td><input data-i="' + i + '" data-f="action" value="' + esc(r.action) + '"></td>' +
-        '<td><input data-i="' + i + '" data-f="baseline" value="' + esc(r.baseline) + '" style="width:64px"></td>' +
-        '<td><input data-i="' + i + '" data-f="target" value="' + esc(r.target) + '" style="width:64px"></td>' +
-        '<td><input data-i="' + i + '" data-f="unit" value="' + esc(r.unit) + '" style="width:48px"></td>' +
+        '<td><input data-i="' + i + '" data-f="section" value="' + esc(r.section) + '" style="min-width:150px"></td>' +
+        '<td><input data-i="' + i + '" data-f="scene" value="' + esc(r.scene) + '" style="min-width:220px"></td>' +
+        '<td><input data-i="' + i + '" data-f="action" value="' + esc(r.action) + '" style="min-width:260px"></td>' +
+        '<td><input data-i="' + i + '" data-f="target" value="' + esc(r.target) + '" style="width:90px"></td>' +
         '<td><select data-i="' + i + '" data-f="direction"><option value="up">↑提升</option><option value="down">↓下降</option></select></td>' +
-        '<td><input data-i="' + i + '" data-f="note" value="' + esc(r.note) + '"></td>' +
+        '<td><input data-i="' + i + '" data-f="note" value="' + esc(r.note) + '" style="min-width:170px"></td>' +
         '<td><button class="btn ghost sm" data-del="' + i + '">删</button></td>';
       body.appendChild(tr);
     });
@@ -288,7 +309,7 @@
     });
   }
   $('btnAddRow').addEventListener('click', function () {
-    state.rows.push({ id: A.uid('a'), section: '', scene: '', action: '', baseline: '', target: '', unit: '', direction: 'up', note: '' });
+    state.rows.push({ id: A.uid('a'), section: '', scene: '', action: '', target: '', direction: 'up', note: '' });
     renderFw();
   });
   $('btnSaveCourse').addEventListener('click', function () {
@@ -297,7 +318,7 @@
     c.theme = $('cTheme').value.trim(); c.needs = $('cNeeds').value.trim();
     c.framework = state.rows.map(function (r) {
       return { id: r.id || A.uid('a'), section: r.section, scene: r.scene, action: r.action,
-        baseline: r.baseline, target: r.target, unit: r.unit, direction: r.direction || 'up', note: r.note };
+        target: r.target, direction: r.direction || 'up', note: r.note };
     });
     A.saveCourse(c).then(function (saved) {
       state.course = saved; toast('课程已保存');
@@ -309,24 +330,70 @@
     if (!confirm('确认删除该课程？其下项目的学员数据将不可恢复。')) return;
     A.deleteCourse(state.course.id).then(function () { show('dashboard'); loadCourses(); });
   });
+  function applyDraft(rows, noteText) {
+    state.rows = rows.map(function (r) {
+      return { id: A.uid('a'), section: r.section || '', scene: r.scene || '', action: r.action || '',
+        target: r.target != null ? String(r.target) : '',
+        direction: r.direction === 'down' ? 'down' : 'up', note: r.note || '' };
+    });
+    renderFw();
+    $('aiNote').textContent = noteText;
+  }
+  function draftFail(e) {
+    $('aiNote').textContent = (e.message === 'no-model') ? '当前无可用模型，请稍后重试或手动填写。' : ('AI 起草失败：' + (e.message || e));
+  }
+
   $('btnAIDraft').addEventListener('click', function () {
     var c = state.course;
     var prompt = '课程主题：' + ($('cTheme').value.trim() || c.theme) + '\n' +
       '客户：' + ($('cClient').value.trim() || c.client) + '\n' +
       '目标：' + ($('cNeeds').value.trim() || c.needs) + '\n' +
-      '请设计课后学习迁移表，4-6 个模块，每模块 1-2 个具体可量化行动。';
+      '请设计课后学习迁移表，4-6 行，每行 = 一个掌握的新方法 × 一个应用场景 × 一个具体行动，尽量给出量化目标。';
     $('aiNote').classList.remove('hidden'); $('aiNote').textContent = 'AI 起草中…';
-    A.draftRows(prompt).then(function (rows) {
-      state.rows = rows.map(function (r) {
-        return { id: A.uid('a'), section: r.section || '', scene: r.scene || '', action: r.action || '',
-          baseline: r.baseline != null ? String(r.baseline) : '', target: r.target != null ? String(r.target) : '',
-          unit: r.unit || '', direction: r.direction === 'down' ? 'down' : 'up', note: r.note || '' };
-      });
-      renderFw(); $('aiNote').textContent = '已根据描述起草 ' + state.rows.length + ' 行，可继续编辑。';
-    }).catch(function (e) {
-      $('aiNote').textContent = (e.message === 'no-model') ? '当前无可用模型，请稍后重试或手动填写。' : ('AI 起草失败：' + (e.message || e));
-    });
+    A.draftRows(prompt).then(function (rows) { applyDraft(rows, '已起草 ' + rows.length + ' 行，可继续编辑。'); })
+      .catch(draftFail);
   });
+
+  /* ------- 课程文件导入：把课程文件 / 行动要求直接转化为迁移表 ------- */
+  $('btnUploadFile').addEventListener('click', function () { $('fileInput').click(); });
+  $('fileInput').addEventListener('change', function () {
+    var f = this.files && this.files[0];
+    this.value = '';
+    if (!f) return;
+    var name = (f.name || '').toLowerCase();
+    $('aiNote').classList.remove('hidden');
+    $('aiNote').textContent = '正在读取「' + f.name + '」…';
+    var extract = /\.docx$/.test(name) ? readDocx(f) : f.text();
+    extract.then(function (text) {
+      if (!text || !text.trim()) { $('aiNote').textContent = '文件里没有读到文字内容；扫描版 PDF / 图片不支持，请换文字版文件。'; return; }
+      draftFromFile(text, f.name);
+    }).catch(function (e) { $('aiNote').textContent = '读取文件失败：' + (e.message || e); });
+  });
+
+  function readDocx(f) {
+    return f.arrayBuffer().then(function (ab) {
+      if (window.mammoth) return window.mammoth.extractRawText({ arrayBuffer: ab }).then(function (r) { return r.value; });
+      return new Promise(function (resolve, reject) {
+        var s = document.createElement('script');
+        s.src = 'https://cdn.jsdelivr.net/npm/mammoth@1.6.0/mammoth.browser.min.js';
+        s.onload = function () { window.mammoth.extractRawText({ arrayBuffer: ab }).then(function (r) { resolve(r.value); }).catch(reject); };
+        s.onerror = function () { reject(new Error('文档解析组件加载失败，请检查网络或改用 .txt / .md')); };
+        document.head.appendChild(s);
+      });
+    });
+  }
+
+  function draftFromFile(text, fileName) {
+    var c = state.course;
+    $('aiNote').textContent = 'AI 正在从「' + fileName + '」提炼迁移表，约需十几秒…';
+    var prompt = '课程主题：' + (($('cTheme').value.trim()) || c.theme || '') + '\n' +
+      '客户：' + (($('cClient').value.trim()) || c.client || '') + '\n' +
+      '目标：' + (($('cNeeds').value.trim()) || c.needs || '') + '\n' +
+      '下面是一份课程文件 / 课后行动要求的原始内容。请通读后，提炼出学员课后要真正用起来的迁移表：4-8 行，每行 = 一个掌握的新方法 × 一个应用场景 × 一个具体行动，尽量给出量化目标。只提炼与课后应用直接相关的内容。\n\n---\n' + text.slice(0, 8000) + '\n---';
+    A.draftRows(prompt).then(function (rows) {
+      applyDraft(rows, '已从「' + fileName + '」起草 ' + rows.length + ' 行，请核对并编辑。');
+    }).catch(draftFail);
+  }
 
   function loadProjects(courseId) {
     A.listProjects(courseId).then(function (list) {

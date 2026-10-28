@@ -180,7 +180,7 @@
       if (!models.length) throw new Error('no-model');
       var model = models[0];
       var messages = [
-        { role: 'system', content: '你是企业培训课程设计师。只输出严格 JSON 数组，每个对象含字段：section(模块), scene(应用场景), action(具体行动), baseline(基线值或空串), target(目标值或空串), unit(单位或空串), direction(up或down), note(量化指标名或空串)。不要解释，不要 markdown。' },
+        { role: 'system', content: '你是企业培训课程设计师。只输出严格 JSON 数组，每个对象含字段：section(掌握的新方法，简短), scene(应用场景，具体的工作情景), action(具体行动，学员在岗位上做出来的可观察行为), target(量化目标值，填不到就留空串), direction(up或down), note(改善的绩效指标名，如无则空串)。不要解释，不要 markdown。' },
         { role: 'user', content: prompt }
       ];
       var answer = '';

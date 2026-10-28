@@ -79,7 +79,7 @@
     var fw = (data.framework || []);
     rows = fw.map(function (a) {
       return { id: a.id, section: a.section, scene: a.scene, action: a.action,
-        baseline: a.baseline, target: a.target, unit: a.unit, direction: a.direction, note: a.note,
+        target: a.target, direction: a.direction, note: a.note,
         resultImpact: '', quantActual: '', difficulty: '', futureApplication: '' };
     });
   }
@@ -105,18 +105,17 @@
     var body = $('fillBody'); body.innerHTML = '';
     rows.forEach(function (r, i) {
       var quantified = r.target !== '' && r.target != null;
-      var hasBase = r.baseline !== '' && r.baseline != null;
       var card = document.createElement('div'); card.className = 'fb';
       var html = '<div class="who"><span class="pill">' + A.esc(r.section || '行动') + '</span> &nbsp;' + A.esc(r.action || '') + '</div>';
       html += '<div class="meta">场景：' + A.esc(r.scene || '—') + '</div>';
       if (quantified) {
-        html += '<div class="meta" style="margin-top:4px">量化目标：' + (hasBase ? A.esc(r.baseline) : '—') + ' → <b>' + A.esc(r.target) + '</b> ' + A.esc(r.unit || '') + '（' + (r.direction === 'down' ? '越低越好' : '越高越好') + '）· ' + A.esc(r.note || '') + '</div>';
+        html += '<div class="meta" style="margin-top:4px">量化目标：<b>' + A.esc(r.target) + '</b>' + (r.note ? ' · ' + A.esc(r.note) : '') + '（' + (r.direction === 'down' ? '越低越好' : '越高越好') + '）</div>';
       }
       html += '<label>结果影响（这一行你实际做到了什么 / 带来了什么改变？）</label>';
       html += '<textarea data-i="' + i + '" data-f="resultImpact" rows="2" placeholder="用一两句话说清楚结果与影响">' + A.esc(r.resultImpact) + '</textarea>';
       if (quantified) {
         html += '<label>实际值（填数字）</label>';
-        html += '<input type="text" inputmode="decimal" data-i="' + i + '" data-f="quantActual" value="' + A.esc(r.quantActual) + '" placeholder="' + A.esc(r.target) + ' ' + A.esc(r.unit || '') + '">';
+        html += '<input type="text" inputmode="decimal" data-i="' + i + '" data-f="quantActual" value="' + A.esc(r.quantActual) + '" placeholder="目标 ' + A.esc(r.target) + '">';
       }
       html += '<label>遇到的困难（可选）</label>';
       html += '<textarea data-i="' + i + '" data-f="difficulty" rows="1" placeholder="执行中卡在哪？">' + A.esc(r.difficulty) + '</textarea>';

@@ -105,7 +105,7 @@
       var card = document.createElement('div'); card.className = 'fb';
       var html = '<div class="who"><span class="pill">' + A.esc(a.section || '行动') + '</span> &nbsp;' + A.esc(a.action || '') + '</div>';
       html += '<div class="meta">场景：' + A.esc(a.scene || '—') + '</div>';
-      if (quantified) html += '<div class="meta" style="margin-top:4px">量化目标：' + A.esc(a.target) + ' ' + A.esc(a.unit || '') + '</div>';
+      if (quantified) html += '<div class="meta" style="margin-top:4px">量化目标：' + A.esc(a.target) + (a.note ? ' · ' + A.esc(a.note) : '') + '</div>';
       html += '<div style="margin-top:6px"><b>结果影响：</b>' + A.esc(s.resultImpact || '（未填写）') + '</div>';
       if (quantified) html += '<div class="meta">实际值：' + A.esc(s.quantActual != null ? s.quantActual : '—') + '</div>';
       if (s.difficulty) html += '<div class="meta">困难：' + A.esc(s.difficulty) + '</div>';

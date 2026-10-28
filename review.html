@@ -180,7 +180,7 @@
           html += '<div class="fb"><div class="who"><span class="pill">' + A.esc(r.section || '行动') + '</span> &nbsp;' + A.esc(r.action || '') + '</div>';
           html += '<div class="meta">场景：' + A.esc(r.scene || '—') + '</div>';
           html += '<div style="margin-top:6px"><b>结果影响：</b>' + A.esc(r.resultImpact || '（未填写）') + '</div>';
-          if (quantified) html += '<div class="meta">目标 ' + A.esc(r.target) + ' ' + A.esc(r.unit || '') + ' · 实际 <b>' + A.esc(r.quantActual != null ? r.quantActual : '—') + '</b></div>';
+          if (quantified) html += '<div class="meta">目标 ' + A.esc(r.target) + ' · 实际 <b>' + A.esc(r.quantActual != null ? r.quantActual : '—') + '</b></div>';
           if (r.difficulty) html += '<div class="meta">困难：' + A.esc(r.difficulty) + '</div>';
           if (r.futureApplication) html += '<div class="meta">未来应用：' + A.esc(r.futureApplication) + '</div>';
           html += '</div>';
@@ -200,7 +200,6 @@
       }
 
       // 讲师评价
-      var revId = rev ? rev.id : null;
       var rating = rev ? (rev.rating || '') : '';
       var comment = rev ? (rev.comment || '') : '';
       var exemplar = (rev && rev.exemplar) ? rev.exemplar : [];
@@ -216,7 +215,7 @@
       box.appendChild(card);
 
       renderExSelector(s.token, sub, exemplar);
-      card.querySelector('[data-save="' + s.token + '"]').addEventListener('click', function () { saveReview(s.token, revId); });
+      card.querySelector('[data-save="' + s.token + '"]').addEventListener('click', function () { saveReview(s.token); });
       var exBtn = card.querySelector('[data-ex="' + s.token + '"]');
       if (exBtn) exBtn.addEventListener('click', function () { pickExemplar(s.token, sub); });
     });
@@ -239,7 +238,7 @@
       });
     });
   }
-  function rowToExemplar(r) { return { id: r.id, section: r.section, action: r.action, scene: r.scene, resultImpact: r.resultImpact, quantActual: r.quantActual, target: r.target, unit: r.unit }; }
+  function rowToExemplar(r) { return { id: r.id, section: r.section, action: r.action, scene: r.scene, resultImpact: r.resultImpact, quantActual: r.quantActual, target: r.target }; }
   function getCurrentEx(token, sub) {
     var rev = state.reviews[token];
     if (rev && rev.exemplar) return rev.exemplar;
@@ -259,12 +258,13 @@
     }).catch(function (e) { toast('保存失败：' + (e.message || e)); });
   }
 
-  function saveReview(token, revId) {
+  function saveReview(token) {
+    var rev = state.reviews[token]; // 点击时实时取最新记录，避免勾选范例已建档后再点保存撞唯一约束
     var rating = $('rate_' + token).value;
     var comment = $('cmt_' + token).value.trim();
     var exArr = getCurrentEx(token, state.subs[token]) || [];
     var payload = { project_id: +pid, student_token: token, rating: rating, comment: comment, exemplar: exArr };
-    if (revId) payload.id = revId;
+    if (rev && rev.id) payload.id = rev.id;
     A.saveReview(payload).then(function (saved) {
       state.reviews[token] = saved;
       toast('评价已保存');
@@ -277,10 +277,10 @@
     var courseId = state.project.course_id;
     var stName = (state.project.students.find(function (s) { return s.token === token; }) || {}).name || '学员';
     var tasks = exArr.map(function (e) {
-      return A.appendTemplate(courseId, { id: A.uid('t'), section: e.section, action: e.action, scene: e.scene, resultImpact: e.resultImpact, quantActual: e.quantActual, target: e.target, unit: e.unit, source: stName, createdAt: new Date().toISOString() });
+      return A.appendTemplate(courseId, { id: A.uid('t'), section: e.section, action: e.action, scene: e.scene, resultImpact: e.resultImpact, quantActual: e.quantActual, target: e.target, source: stName, createdAt: new Date().toISOString() });
     });
     Promise.all(tasks).then(function () {
-      toast('已固化 ' + exArr.length + ' 条范例到课程模版库');
+      toast('已固化 ' + exArr.length + ' 条范例到该课程的「模版库」（工作台打开这门课程即可看到）');
     }).catch(function (e) { toast('固化失败：' + (e.message || e)); });
   }
 })();
