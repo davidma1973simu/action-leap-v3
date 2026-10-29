@@ -1,0 +1,652 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>Action Leap · 操作指南（讲师 / 培训负责人 / 业务领导）</title>
+<style>
+/* ===========================================================
+   Action Leap — 竖版 A4 幻灯片版式（deck.css）
+   单页尺寸 794×1123px = A4 210×297mm @96dpi
+   改视觉只改本文件，不要动 HTML 内联样式
+   =========================================================== */
+
+:root{
+  --bg:#FBF3EA;
+  --paper:#FFFDFA;
+  --ink:#2A2320;
+  --ink-2:#5B5049;
+  --ink-3:#8C8078;
+  --line:#EADFD3;
+  --coral:#FF7A4D;
+  --coral-deep:#E45F32;
+  --coral-soft:#FFEDE4;
+  --indigo:#4F46E5;
+  --indigo-soft:#EEEDFD;
+  --ok:#1E9E6A;
+  --r:22px;
+  --shadow:0 12px 34px rgba(90,60,40,.10);
+  --font:-apple-system,BlinkMacSystemFont,"PingFang SC","Hiragino Sans GB","Microsoft YaHei","Noto Sans SC",sans-serif;
+}
+
+*{box-sizing:border-box;-webkit-print-color-adjust:exact;print-color-adjust:exact;}
+html,body{margin:0;padding:0;}
+body{
+  background:#EFE5DA;
+  font-family:var(--font);
+  color:var(--ink);
+  -webkit-font-smoothing:antialiased;
+  line-height:1.55;
+}
+
+/* ---------- 页 ---------- */
+.page{
+  width:794px;
+  min-height:1123px;
+  height:1123px;
+  margin:26px auto;
+  background:var(--bg);
+  border-radius:26px;
+  box-shadow:var(--shadow);
+  padding:62px 58px 54px;
+  display:flex;
+  flex-direction:column;
+  position:relative;
+  overflow:hidden;
+}
+.page::after{
+  content:attr(data-pnum);
+  position:absolute;
+  right:56px;bottom:26px;
+  font-size:12px;font-weight:700;color:var(--ink-3);
+  letter-spacing:.06em;
+}
+/* 内容垂直居中：首元素与落款各吃一半余量，避免下半页大片空白 */
+.page:not(.cover) > .eyebrow:first-child{margin-top:auto;}
+
+/* ---------- 排版块 ---------- */
+.eyebrow{
+  font-size:12px;font-weight:800;letter-spacing:.18em;
+  text-transform:uppercase;color:var(--coral-deep);
+  margin:0 0 14px;
+}
+.eyebrow.dim{color:var(--ink-3);}
+h1{
+  font-size:44px;line-height:1.2;font-weight:800;
+  margin:0 0 18px;letter-spacing:-.02em;
+}
+h1.sm{font-size:36px;}
+h2{
+  font-size:31px;line-height:1.28;font-weight:800;
+  margin:0 0 14px;letter-spacing:-.015em;
+}
+h3{font-size:19px;font-weight:800;margin:0 0 6px;}
+p{margin:0 0 12px;}
+.lead{font-size:18px;color:var(--ink-2);line-height:1.62;margin:0 0 26px;}
+.body{font-size:15.5px;color:var(--ink-2);line-height:1.68;}
+.small{font-size:13.5px;color:var(--ink-3);line-height:1.6;}
+.mono{font-variant-numeric:tabular-nums;}
+
+.brandline{
+  margin-top:auto;
+  padding-top:20px;
+  padding-right:80px;
+  border-top:1px solid var(--line);
+  font-size:13px;color:var(--ink-3);line-height:1.5;
+}
+
+/* ---------- 封面 ---------- */
+.cover{
+  background:
+    radial-gradient(680px 420px at 88% -6%, rgba(255,122,77,.20), transparent 62%),
+    radial-gradient(560px 400px at -12% 108%, rgba(79,70,229,.13), transparent 66%),
+    var(--bg);
+}
+.cover .mark{
+  display:flex;align-items:center;gap:10px;
+  font-size:15px;font-weight:800;letter-spacing:.02em;
+  margin-bottom:0;
+}
+.cover .mark i{
+  width:12px;height:12px;border-radius:4px;background:var(--coral);
+  display:inline-block;transform:rotate(10deg);
+}
+.cover h1{font-size:56px;line-height:1.14;margin-bottom:22px;}
+.cover .sub{font-size:19px;color:var(--ink-2);max-width:600px;line-height:1.66;}
+.chips{display:flex;gap:9px;flex-wrap:wrap;margin-top:34px;}
+.chip{
+  font-size:13.5px;font-weight:700;color:var(--indigo);
+  background:var(--indigo-soft);
+  padding:8px 15px;border-radius:999px;
+}
+.chip.warm{color:var(--coral-deep);background:var(--coral-soft);}
+
+/* ---------- 网格 ---------- */
+.grid{display:grid;gap:14px;}
+.g2{grid-template-columns:1fr 1fr;}
+.g3{grid-template-columns:1fr 1fr 1fr;}
+.g4{grid-template-columns:repeat(4,1fr);}
+.gap-lg{gap:20px;}
+
+/* ---------- 卡 ---------- */
+.card{
+  background:var(--paper);
+  border:1px solid var(--line);
+  border-radius:var(--r);
+  padding:22px 22px 20px;
+}
+.card.flat{background:transparent;border-style:dashed;}
+.card.tint{background:var(--coral-soft);border-color:#FBD9C9;}
+.card.ind{background:var(--indigo-soft);border-color:#DBD9FA;}
+.card h3{font-size:17px;}
+.card .body{font-size:14px;line-height:1.62;}
+
+/* 编号断点 */
+.break{display:flex;gap:16px;align-items:flex-start;}
+.break .n{
+  flex:0 0 auto;width:38px;height:38px;border-radius:13px;
+  background:var(--ink);color:#fff;
+  font-size:16px;font-weight:800;
+  display:flex;align-items:center;justify-content:center;
+}
+.break .n.c{background:var(--coral);}
+.break .n.i{background:var(--indigo);}
+.break .t{font-size:16.5px;font-weight:800;margin-bottom:3px;}
+.break .d{font-size:13.5px;color:var(--ink-2);line-height:1.6;}
+
+/* ---------- 流程条 ---------- */
+.flow{display:flex;align-items:stretch;gap:0;margin:6px 0 22px;}
+.flow .step{
+  flex:1;background:var(--paper);border:1px solid var(--line);
+  border-radius:15px;padding:14px 12px;text-align:center;
+}
+.flow .step .k{font-size:11.5px;font-weight:800;letter-spacing:.1em;color:var(--coral-deep);}
+.flow .step .v{font-size:14.5px;font-weight:800;margin-top:3px;}
+.flow .step .s{font-size:12px;color:var(--ink-3);margin-top:2px;}
+.flow .arw{
+  flex:0 0 22px;display:flex;align-items:center;justify-content:center;
+  color:var(--ink-3);font-size:15px;
+}
+
+/* ---------- 大数字 ---------- */
+.stat{
+  background:var(--paper);border:1px solid var(--line);
+  border-radius:20px;padding:20px 18px;
+}
+.stat .v{
+  font-size:38px;font-weight:800;letter-spacing:-.03em;line-height:1.05;
+  background:linear-gradient(135deg,var(--coral),var(--coral-deep));
+  -webkit-background-clip:text;background-clip:text;color:transparent;
+}
+.stat .v small{font-size:16px;font-weight:800;-webkit-text-fill-color:var(--coral-deep);}
+.stat .l{font-size:14px;font-weight:800;margin-top:7px;}
+.stat .s{font-size:12.5px;color:var(--ink-3);margin-top:2px;line-height:1.5;}
+
+/* ---------- 表 ---------- */
+table.t{width:100%;border-collapse:collapse;font-size:13.5px;}
+table.t th{
+  text-align:left;font-size:11.5px;font-weight:800;letter-spacing:.1em;
+  text-transform:uppercase;color:var(--ink-3);
+  padding:0 12px 9px;border-bottom:1.5px solid var(--line);
+}
+table.t td{
+  padding:13px 12px;border-bottom:1px solid var(--line);
+  vertical-align:top;line-height:1.55;color:var(--ink-2);
+}
+table.t tr:last-child td{border-bottom:none;}
+table.t td.k{font-weight:800;color:var(--ink);white-space:nowrap;font-size:14px;}
+table.t td b{color:var(--ink);}
+
+/* ---------- 对照（好/差） ---------- */
+.vs{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
+.vs .box{border-radius:18px;padding:18px 18px 16px;}
+.vs .bad{background:#F6F0EA;border:1px solid var(--line);}
+.vs .good{background:#EAF7F1;border:1px solid #CFEADF;}
+.vs .tag{
+  display:inline-block;font-size:11.5px;font-weight:800;letter-spacing:.08em;
+  padding:3px 10px;border-radius:999px;margin-bottom:9px;
+}
+.vs .bad .tag{background:#EBE1D7;color:#8A7A6C;}
+.vs .good .tag{background:#CDECDE;color:#17764F;}
+.vs .q{font-size:14px;line-height:1.65;color:var(--ink);}
+.vs .why{font-size:12.5px;color:var(--ink-3);margin-top:9px;line-height:1.55;}
+
+/* ---------- 步骤 ---------- */
+.steps{counter-reset:s;}
+.steps .st{
+  counter-increment:s;
+  display:grid;grid-template-columns:44px 1fr;gap:14px;
+  padding:15px 0;border-bottom:1px solid var(--line);
+}
+.steps .st:last-child{border-bottom:none;}
+.steps .st::before{
+  content:counter(s,decimal-leading-zero);
+  font-size:19px;font-weight:800;color:var(--coral);
+  font-variant-numeric:tabular-nums;line-height:1.3;
+}
+.steps .st .t{font-size:15.5px;font-weight:800;margin-bottom:2px;}
+.steps .st .d{font-size:13.5px;color:var(--ink-2);line-height:1.6;}
+.steps .st .d em{
+  font-style:normal;font-weight:800;color:var(--ink);
+  background:#F4EAE0;padding:1px 5px;border-radius:5px;
+}
+
+/* ---------- 提示条 ---------- */
+.tip{
+  display:flex;gap:11px;
+  background:var(--paper);border:1px solid var(--line);
+  border-left:4px solid var(--coral);
+  border-radius:12px;padding:13px 16px;
+  font-size:13.5px;color:var(--ink-2);line-height:1.6;
+}
+.tip .lb{font-weight:800;color:var(--coral-deep);flex:0 0 auto;}
+.tip.i{border-left-color:var(--indigo);}
+.tip.i .lb{color:var(--indigo);}
+
+/* ---------- 勾选清单 ---------- */
+.check{display:flex;gap:10px;font-size:14px;color:var(--ink-2);padding:8px 0;line-height:1.55;}
+.check::before{
+  content:"";flex:0 0 auto;width:16px;height:16px;margin-top:3px;
+  border:1.8px solid var(--ink-3);border-radius:5px;
+}
+
+/* ---------- 工具条（打印隐藏） ---------- */
+.toolbar{
+  position:fixed;right:22px;bottom:22px;z-index:99;
+  display:flex;gap:8px;align-items:center;
+  background:rgba(255,253,250,.94);
+  border:1px solid var(--line);border-radius:999px;
+  padding:8px 10px;box-shadow:0 8px 24px rgba(90,60,40,.16);
+  backdrop-filter:blur(8px);
+}
+.toolbar button{
+  font-family:var(--font);font-size:13px;font-weight:800;
+  color:var(--ink);background:transparent;border:none;
+  padding:7px 13px;border-radius:999px;cursor:pointer;
+}
+.toolbar button:hover{background:var(--coral-soft);color:var(--coral-deep);}
+.toolbar button.main{background:var(--coral);color:#fff;}
+.toolbar .cnt{font-size:12px;font-weight:800;color:var(--ink-3);padding:0 6px;}
+
+/* ---------- 打印 ---------- */
+@page{size:A4 portrait;margin:0;}
+@media print{
+  body{background:#fff;}
+  .toolbar{display:none !important;}
+  .page{
+    margin:0;border-radius:0;box-shadow:none;
+    break-after:page;page-break-after:always;
+    width:210mm;height:297mm;
+  }
+  .page:last-child{break-after:auto;page-break-after:auto;}
+}
+
+</style>
+</head>
+<body>
+
+<!-- ============ 01 封面 + 角色 ============ -->
+<section class="page cover">
+  <div class="mark"><i></i> ACTION LEAP · 操作指南</div>
+  <div class="eyebrow" style="margin-top:auto">创建者端</div>
+  <h1 class="sm">讲师 · 培训负责人<br>业务领导</h1>
+  <p class="sub" style="margin-bottom:24px">本册覆盖三个阶段：<b>定义迁移表 → 派发项目 → 评价与固化</b>。约 20 分钟读完，即可独立跑完一个班。</p>
+
+  <div class="card" style="padding:18px 20px">
+    <table class="t" style="font-size:13px">
+      <thead><tr><th style="width:118px">角色</th><th style="width:96px">账号</th><th>权限范围</th></tr></thead>
+      <tbody>
+        <tr><td class="k">讲师</td><td>自己的邮箱</td><td><b>完全控制</b>：建课、改表、派发、评价、导出</td></tr>
+        <tr><td class="k">培训负责人</td><td>自己的邮箱<br><span class="small">（需被邀请）</span></td><td><b>只读全部内容</b> + 在任何位置留建议</td></tr>
+        <tr><td class="k">业务领导</td><td>自己的邮箱<br><span class="small">（需被邀请）</span></td><td><b>只读全部内容</b> + 在任何位置留建议</td></tr>
+        <tr><td class="k">学员 / 上司</td><td>无需账号</td><td>凭专属链接填写，只看自己那一条</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="brandline">唯一需要账号的是你。其余所有人，点开链接就能参与。</div>
+</section>
+
+<!-- ============ 02 全景 ============ -->
+<section class="page">
+  <div class="eyebrow">全景</div>
+  <h2>4 周里，谁在做什么。</h2>
+  <p class="lead">课后 4 周被拆成四个阶段，每个阶段只压给一个人。你不必催，进度就在页面上。</p>
+
+  <table class="t">
+    <thead><tr><th style="width:96px">阶段</th><th style="width:104px">谁动手</th><th style="width:150px">他做什么</th><th>你要做什么</th></tr></thead>
+    <tbody>
+      <tr><td class="k">第 1 周<br>学员填写</td><td>学员</td><td>对每条行动补「结果影响 + 实际值」</td><td>发链接，回答「怎么填」的疑问</td></tr>
+      <tr><td class="k">第 2 周<br>上司反馈</td><td>直接上司</td><td>读成果，写总评 / 两条建议 / 承诺</td><td>确认上司已收到链接（往往卡在这一步）</td></tr>
+      <tr><td class="k">第 3 周<br>学员提交</td><td>学员</td><td>修订后正式提交</td><td>看提交率，对未交的人定向提醒</td></tr>
+      <tr><td class="k">第 4 周<br>讲师评价</td><td>你</td><td>逐人评级、写评语、勾选范例</td><td>评价 + 复盘萃取 + 导出报表</td></tr>
+    </tbody>
+  </table>
+
+  <div class="tip i" style="margin-top:22px">
+    <span class="lb">软提示</span>
+    <span>时间线只做提示，<b>不锁死流程</b>。学员提前填、上司晚两天评，都不影响系统运转——现实里的项目本来就会漂。阶段名称与周数可在项目页修改。</span>
+  </div>
+
+  <div class="card flat" style="margin-top:18px">
+    <p class="body" style="margin:0"><b>重要的心智转换：</b>你不是在「推一个系统」，你是在替全班设计一条能走完的路。学员和上司看到的只有一页表单，看不到后台的任何复杂度。</p>
+  </div>
+
+  <div class="brandline">流程的价值不在于严格，而在于每一步都有人负责、都有痕迹。</div>
+</section>
+
+<!-- ============ 03 登录 ============ -->
+<section class="page">
+  <div class="eyebrow">第一步</div>
+  <h2>登录与工作台。</h2>
+  <p class="lead">不需要设密码。填邮箱，收 6 位验证码，回车即进。</p>
+
+  <div class="steps">
+    <div class="st"><div><div class="t">填写邮箱，点「获取验证码」</div><div class="d">用你常用的工作邮箱。第一次登录即自动注册，无需单独开户。</div></div></div>
+    <div class="st"><div><div class="t">去邮箱取码，填进「验证码」，点「登录 / 注册」</div><div class="d">验证码几分钟内有效。收不到就检查垃圾邮件，或换一个邮箱域再试。</div></div></div>
+    <div class="st"><div><div class="t">进入「课程与项目」工作台</div><div class="d">这里只有两个入口：<em>课程蓝图</em>（可复用的教学内容）和它下面的<em>项目期次</em>（某一次开班）。</div></div></div>
+  </div>
+
+  <div class="grid g2" style="margin-top:20px">
+    <div class="card">
+      <h3>课程 = 蓝图</h3>
+      <p class="body" style="margin-bottom:0">一门课只建一次。迁移表、模版库都挂在课程上，下一期开班直接复用，不必重写。</p>
+    </div>
+    <div class="card">
+      <h3>项目 = 一期</h3>
+      <p class="body" style="margin-bottom:0">同一门课 × 某一批学员 × 一段时间。名单、链接、提交、报表都归在项目里。</p>
+    </div>
+  </div>
+
+  <div class="tip" style="margin-top:18px">
+    <span class="lb">提醒</span>
+    <span>你的课程只属于你。要让培训负责人或业务领导看到，需要主动把他们加为<b>协作人</b>——见本册第 10 页。</span>
+  </div>
+
+  <div class="brandline">登录只做一件事：确认你是这门课的主人。</div>
+</section>
+
+<!-- ============ 04 迁移表 ============ -->
+<section class="page">
+  <div class="eyebrow">第二步</div>
+  <h2>写一张能落地的迁移表。</h2>
+  <p class="lead">这是整个产品的核心，也是最值得你花时间的地方。一行 = 一个新方法 × 一个场景 × 一个行动 × 一个指标。</p>
+
+  <table class="t" style="margin-top:6px">
+    <thead><tr><th style="width:106px">列</th><th style="width:190px">写什么</th><th>判断标准</th></tr></thead>
+    <tbody>
+      <tr><td class="k">掌握新方法</td><td>课程里的哪个方法论 / 工具</td><td>能被命名。写「结构化复盘四步」，不写「提升能力」</td></tr>
+      <tr><td class="k">应用场景</td><td>回到岗位后，什么场合会用到</td><td>具体到会议、流程、决策节点，能被一眼认出来</td></tr>
+      <tr><td class="k">具体行动</td><td>他在那个场景里实际要做的动作</td><td>动词开头，一周内能完成，别人能观察到</td></tr>
+      <tr><td class="k">目标 / 方向</td><td>数字目标，以及越高越好还是越低越好</td><td>没数字可留空，该行就只收定性结果</td></tr>
+      <tr><td class="k">改善的绩效指标</td><td>这个行动最终影响哪个经营指标</td><td>与业务口径一致：周转率、交付周期、返工率…</td></tr>
+    </tbody>
+  </table>
+
+  <div class="vs" style="margin-top:20px">
+    <div class="box bad">
+      <span class="tag">写得太虚</span>
+      <div class="q">「提升跨部门协同能力」</div>
+      <div class="why">学员不知道周一该做什么，上司也无从判断。</div>
+    </div>
+    <div class="box good">
+      <span class="tag">可用</span>
+      <div class="q">「在月度产销会上，用沙盘口径向生产部门说明促销量的资金占用，会后形成一页共识备忘」</div>
+      <div class="why">场景、动作、产出物齐全，一周内可完成。</div>
+    </div>
+  </div>
+
+  <div class="tip" style="margin-top:16px">
+    <span class="lb">行数</span>
+    <span>4–6 行为宜。<b>超过 8 行，完成率一定崩</b>——学员的真实带宽只有每周一到两条。</span>
+  </div>
+
+  <div class="brandline">学员只会认真做「看得懂、做得完」的事。你的表决定了他的完成率。</div>
+</section>
+
+<!-- ============ 05 起草 ============ -->
+<section class="page">
+  <div class="eyebrow">第二步 · 加速</div>
+  <h2>不想从空白开始？<br>两种起草方式。</h2>
+  <p class="lead">都在迁移表右上角。生成的是草稿，不是成品——<b>必须逐行核对</b>，这是你的专业判断所在。</p>
+
+  <div class="grid g2 gap-lg" style="margin-top:6px">
+    <div class="card tint">
+      <h3>「AI 起草」</h3>
+      <p class="body">已经填好客户、群体、主题、目标的前提下点击。系统按这四项生成 4–8 行草稿，直接落到表里。</p>
+      <p class="small" style="margin:0">适合：课程框架清楚，只差落笔。</p>
+    </div>
+    <div class="card ind">
+      <h3>「上传课程文件起草」</h3>
+      <p class="body">直接上传课程大纲、讲义、课后行动要求。支持 <b>.txt / .md / .docx</b>，Word 自动提取正文后交给 AI 提炼。</p>
+      <p class="small" style="margin:0">适合：有现成材料，想一步到位。<br>扫描版 PDF 与图片不支持，需文字版。</p>
+    </div>
+  </div>
+
+  <div class="card" style="margin-top:18px">
+    <h3>核对草稿的三条硬标准</h3>
+    <p class="body" style="margin-bottom:0">
+      ① <b>行动必须是动作</b>，不是「理解」「掌握」「提升」这类状态词。<br>
+      ② <b>场景必须是学员真实会遇到的</b>，不是教科书里的通用情境。<br>
+      ③ <b>指标必须和业务口径对得上</b>，否则后期算达成率没人认。
+    </p>
+  </div>
+
+  <div class="tip i" style="margin-top:16px">
+    <span class="lb">保存</span>
+    <span>改完点「保存课程」。没保存就离开，这次的编辑不会留下——表里所有单元格都是即时可改的，但落库要按一下。</span>
+  </div>
+
+  <div class="brandline">AI 负责把空白填满，你负责把它变得专业。</div>
+</section>
+
+<!-- ============ 06 派发 ============ -->
+<section class="page">
+  <div class="eyebrow">第三步</div>
+  <h2>派发：20 人也是一次操作。</h2>
+  <p class="lead">进入课程 → 点「+ 派发新项目」。填项目名称、班级、起止日期，然后处理名单。</p>
+
+  <div class="steps" style="margin-top:4px">
+    <div class="st"><div><div class="t">批量导入名单</div><div class="d">在「批量导入名单」框里粘贴，每行一位：<em>学员姓名, 上司姓名</em>（中英文逗号都行），点「解析并填入名单」。也可以「上传 CSV」直接导。</div></div></div>
+    <div class="st"><div><div class="t">设定时间线</div><div class="d">选择开始日期，四个阶段会按周自动排开。需要调整就在时间线区域改阶段名与周数。</div></div></div>
+    <div class="st"><div><div class="t">生成链接并保存</div><div class="d">系统为每位学员生成两条链接：学员填写链接、上司反馈链接。令牌自动附带，无需你拼装。</div></div></div>
+    <div class="st"><div><div class="t">分发</div><div class="d">用「复制全部链接」一次性复制，或「下载链接清单 CSV」——里面是姓名 + 两条链接的表格，直接邮件合并群发。</div></div></div>
+  </div>
+
+  <div class="tip" style="margin-top:18px">
+    <span class="lb">最容易翻车的地方</span>
+    <span>不是学员不填，是<b>上司没收到链接</b>。建议你另发一条消息给各位上司，说明「这封邮件里有一条专属链接，3 分钟能写完」。</span>
+  </div>
+
+  <div class="brandline">你只需要做一次分发动作，剩下的由链接自己完成。</div>
+</section>
+
+<!-- ============ 07 过程 ============ -->
+<section class="page">
+  <div class="eyebrow">第四步</div>
+  <h2>过程中，你只需要看。</h2>
+  <p class="lead">没有催办、没有后台任务。打开评价页，谁交了、谁没交、谁的上司已反馈，一屏看完。</p>
+
+  <div class="grid g2 gap-lg" style="margin-top:4px">
+    <div class="card">
+      <h3>学员端在做什么</h3>
+      <p class="body" style="margin-bottom:0">点开链接 → 看到本班的 4 阶段进度与自己该做的事 → 逐行补「结果影响 + 实际值」 → 可先「保存草稿」，改完再「提交迁移」。<br><br>困难与后续用法是选填，不填不影响提交。</p>
+    </div>
+    <div class="card">
+      <h3>上司端在做什么</h3>
+      <p class="body" style="margin-bottom:0">点开自己的链接 → 只读浏览该学员的成果 → 写三段：整体评语、至少两条建议、一个跟进承诺 →「提交反馈」。<br><br>他看不到别人的内容，也不需要账号。</p>
+    </div>
+  </div>
+
+  <div class="card flat" style="margin-top:18px">
+    <h3>三种状态，直接告诉你该找谁</h3>
+    <p class="body" style="margin-bottom:0">
+      <b>未提交</b> → 找学员，问是不是看不懂某一行的要求。<br>
+      <b>已提交 / 待上司反馈</b> → 找上司，把链接再发一次（八成是漏看了邮件）。<br>
+      <b>上司已反馈</b> → 不用管，等评价阶段统一处理。
+    </p>
+  </div>
+
+  <div class="tip i" style="margin-top:16px">
+    <span class="lb">别做的事</span>
+    <span>不要在群里催所有人。定向找那 3 个人，比群发 30 条有效得多——数据已经告诉你是谁。</span>
+  </div>
+
+  <div class="brandline">管理者的时间应该花在异常上，而不是平均撒在所有环节。</div>
+</section>
+
+<!-- ============ 08 评价固化 ============ -->
+<section class="page">
+  <div class="eyebrow">第五步</div>
+  <h2>评价与固化：<br>这一步决定课程会不会变强。</h2>
+
+  <div class="steps" style="margin-top:2px">
+    <div class="st"><div><div class="t">逐人评价</div><div class="d">打开项目 →「评价固化」。每位学员一张卡：迁移成果 + 上司反馈。给评级（<em>A 优秀范例 / B 达标 / C 待提升</em>）、写评语，点「保存评价」。</div></div></div>
+    <div class="st"><div><div class="t">勾选范例并固化</div><div class="d">在学员的成果里勾选值得留下的一条，点「★ 选范例并固化到模版库」。它会进入课程的<em>课程模版库</em>，带上学号与日期。</div></div></div>
+    <div class="st"><div><div class="t">复盘与萃取</div><div class="d">在「项目复盘与知识萃取」里写复盘小结：这期做对了什么、卡在哪、下期怎么改。每条范例补上<em>后继跟进时间点</em>与责任人。</div></div></div>
+    <div class="st"><div><div class="t">收尾</div><div class="d">四阶段结束后点「收尾项目」。项目归档，报表与复盘长期可查。</div></div></div>
+  </div>
+
+  <div class="tip" style="margin-top:18px">
+    <span class="lb">这块是共用区</span>
+    <span>「项目复盘与知识萃取」由讲师与甲方培训负责人共用——复盘小结与后继跟进，是甲方向上级汇报「培训带来了什么」的直接素材。</span>
+  </div>
+
+  <div class="brandline">不固化的成果，下期就消失了。勾一下，组织就多一条经验。</div>
+</section>
+
+<!-- ============ 09 报表 ============ -->
+<section class="page">
+  <div class="eyebrow">第六步</div>
+  <h2>交出那份能上会的材料。</h2>
+  <p class="lead">评价页点「导出汇总报表」。报表是自包含页面，不需要你二次排版。</p>
+
+  <div class="grid g3" style="margin-top:4px">
+    <div class="stat"><div class="v" style="font-size:26px">主题与目标</div><div class="s" style="margin-top:6px">课程主题、待解决的业务问题</div></div>
+    <div class="stat"><div class="v" style="font-size:26px">迁移表</div><div class="s" style="margin-top:6px">完整框架，六列原样呈现</div></div>
+    <div class="stat"><div class="v" style="font-size:26px">完成情况</div><div class="s" style="margin-top:6px">提交率、上司反馈率、量化达成率</div></div>
+    <div class="stat"><div class="v" style="font-size:26px">上司反馈</div><div class="s" style="margin-top:6px">三段式原文，不加工</div></div>
+    <div class="stat"><div class="v" style="font-size:26px">评级分类</div><div class="s" style="margin-top:6px">A/B/C 名单与分布</div></div>
+    <div class="stat"><div class="v" style="font-size:26px">范例与复盘</div><div class="s" style="margin-top:6px">优秀行动、后继跟进计划</div></div>
+  </div>
+
+  <div class="card" style="margin-top:20px">
+    <h3>三种交付格式，对应三个场景</h3>
+    <p class="body" style="margin-bottom:0">
+      「<b>打印 / 另存 PDF</b>」→ 上会、存档、发甲方高层。<br>
+      「<b>下载 HTML</b>」→ 自包含单文件，发给甲方自己打开，排版不散。<br>
+      「<b>下载 CSV</b>」→ 原始数据，给甲方做二次分析或导入自己的系统。
+    </p>
+  </div>
+
+  <div class="brandline">你交出的不是感受，是一份可以被追问的数据。</div>
+</section>
+
+<!-- ============ 10 协作人 ============ -->
+<section class="page">
+  <div class="eyebrow">多人协作</div>
+  <h2>让甲方看到，<br>但不让他们改坏。</h2>
+  <p class="lead">培训负责人和业务领导用各自邮箱登录，即可只读查看这门课的全部内容——设计、学员填写、上司反馈、评价、报表。</p>
+
+  <div class="steps" style="margin-top:2px">
+    <div class="st"><div><div class="t">邀请</div><div class="d">课程页找到「协作人（培训负责人 / 业务领导 · 只读）」，填姓名（可选）与邮箱，点「添加协作人」。</div></div></div>
+    <div class="st"><div><div class="t">对方登录</div><div class="d">把应用地址发给对方。他用自己邮箱收验证码登录，课程列表里就会出现这门课，带<em>协作 · 只读</em>标记。</div></div></div>
+    <div class="st"><div><div class="t">对方留建议</div><div class="d">他在任何位置点「建议」就能写一条：课程信息、迁移表每一行、模版库、项目、每位学员、报表每个区块。</div></div></div>
+    <div class="st"><div><div class="t">你处理</div><div class="d">回到课程页，「协作建议收件箱」里逐条看，改完点「标记已处理」。工作台会显示「N 条协作建议待处理」。</div></div></div>
+  </div>
+
+  <div class="tip i" style="margin-top:18px">
+    <span class="lb">权限边界</span>
+    <span>只读是在数据库层实现的，不是靠隐藏按钮。协作人<b>无法修改任何内容</b>，也无法替你做评价——他们只能建议，改不改由你决定。</span>
+  </div>
+
+  <div class="tip" style="margin-top:12px">
+    <span class="lb">注意</span>
+    <span>协作人能看到学员填写的原始内容，也看得到含令牌的学员/上司链接。如果业务领导不该拿到这些链接，就别把他加成协作人，改成给他一份导出的报表。</span>
+  </div>
+
+  <div class="brandline">共享靠邀请，不靠共用账号。每个人的动作都能追溯到人。</div>
+</section>
+
+<!-- ============ 11 清单 ============ -->
+<section class="page">
+  <div class="eyebrow">附</div>
+  <h2>开课前跑一遍这张清单。</h2>
+  <p class="lead">五个问题全答「是」，这个班就不会白办。</p>
+
+  <div style="margin-top:6px">
+    <div class="check">迁移表 4–6 行，每行都有明确的场景与可观察的行动？</div>
+    <div class="check">每行的绩效指标与业务口径一致，能算达成率？</div>
+    <div class="check">名单里每位学员都填了对应的直接上司姓名？</div>
+    <div class="check">上司链接已单独发到本人手里，而不只是群发？</div>
+    <div class="check">四阶段的时间安排与本单位的真实节奏对得上？</div>
+    <div class="check">需要看的人（培训负责人 / 业务领导）已被邀请为协作人？</div>
+  </div>
+
+  <div class="tip" style="margin-top:22px">
+    <span class="lb">一个经验值</span>
+    <span>清单里最容易漏的是第四项。<b>多数课后项目失败，死在「上司不知道自己要做什么」，而不是学员不愿意写。</b></span>
+  </div>
+
+  <div class="card tint" style="margin-top:20px">
+    <h3>跑完第一个班之后</h3>
+    <p class="body" style="margin-bottom:0">回来看两件事：完成率低于 70% 的行，是不是写得太虚；被勾选为范例的行，是不是可以升级成下一期的标准动作。这两条调整，比加功能有用得多。</p>
+  </div>
+
+  <div class="brandline">工具只负责把链路铺好，能不能走完，取决于设计。</div>
+</section>
+
+<script>
+/* Action Leap deck 翻页与打印 —— 极简，无依赖 */
+(function () {
+  var pages = [].slice.call(document.querySelectorAll('.page'));
+  pages.forEach(function (p, i) {
+    p.setAttribute('data-pnum', (i + 1) + ' / ' + pages.length);
+  });
+
+  var bar = document.createElement('div');
+  bar.className = 'toolbar';
+  bar.innerHTML =
+    '<button data-act="prev">←</button>' +
+    '<span class="cnt" id="dcnt">1 / ' + pages.length + '</span>' +
+    '<button data-act="next">→</button>' +
+    '<button class="main" data-act="print">打印 / 存 PDF</button>';
+  document.body.appendChild(bar);
+
+  var cur = 0;
+  function go(i) {
+    cur = Math.max(0, Math.min(pages.length - 1, i));
+    pages[cur].scrollIntoView({ behavior: 'smooth', block: 'start' });
+    document.getElementById('dcnt').textContent = (cur + 1) + ' / ' + pages.length;
+  }
+
+  bar.addEventListener('click', function (e) {
+    var b = e.target.closest('button');
+    if (!b) return;
+    var a = b.getAttribute('data-act');
+    if (a === 'prev') go(cur - 1);
+    else if (a === 'next') go(cur + 1);
+    else if (a === 'print') window.print();
+  });
+
+  document.addEventListener('keydown', function (e) {
+    if (e.key === 'ArrowRight' || e.key === 'PageDown') { e.preventDefault(); go(cur + 1); }
+    if (e.key === 'ArrowLeft' || e.key === 'PageUp') { e.preventDefault(); go(cur - 1); }
+    if (e.key === 'p' && (e.metaKey || e.ctrlKey)) { /* 交给浏览器 */ }
+  });
+
+  // 滚动时同步页码
+  var io = new IntersectionObserver(function (entries) {
+    entries.forEach(function (en) {
+      if (en.isIntersecting) {
+        cur = pages.indexOf(en.target);
+        var el = document.getElementById('dcnt');
+        if (el) el.textContent = (cur + 1) + ' / ' + pages.length;
+      }
+    });
+  }, { threshold: 0.55 });
+  pages.forEach(function (p) { io.observe(p); });
+})();
+
+</script>
+</body>
+</html>

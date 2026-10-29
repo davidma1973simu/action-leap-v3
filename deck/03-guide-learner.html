@@ -1,0 +1,533 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>Action Leap · 操作指南（学员 / 直接上司）</title>
+<style>
+/* ===========================================================
+   Action Leap — 竖版 A4 幻灯片版式（deck.css）
+   单页尺寸 794×1123px = A4 210×297mm @96dpi
+   改视觉只改本文件，不要动 HTML 内联样式
+   =========================================================== */
+
+:root{
+  --bg:#FBF3EA;
+  --paper:#FFFDFA;
+  --ink:#2A2320;
+  --ink-2:#5B5049;
+  --ink-3:#8C8078;
+  --line:#EADFD3;
+  --coral:#FF7A4D;
+  --coral-deep:#E45F32;
+  --coral-soft:#FFEDE4;
+  --indigo:#4F46E5;
+  --indigo-soft:#EEEDFD;
+  --ok:#1E9E6A;
+  --r:22px;
+  --shadow:0 12px 34px rgba(90,60,40,.10);
+  --font:-apple-system,BlinkMacSystemFont,"PingFang SC","Hiragino Sans GB","Microsoft YaHei","Noto Sans SC",sans-serif;
+}
+
+*{box-sizing:border-box;-webkit-print-color-adjust:exact;print-color-adjust:exact;}
+html,body{margin:0;padding:0;}
+body{
+  background:#EFE5DA;
+  font-family:var(--font);
+  color:var(--ink);
+  -webkit-font-smoothing:antialiased;
+  line-height:1.55;
+}
+
+/* ---------- 页 ---------- */
+.page{
+  width:794px;
+  min-height:1123px;
+  height:1123px;
+  margin:26px auto;
+  background:var(--bg);
+  border-radius:26px;
+  box-shadow:var(--shadow);
+  padding:62px 58px 54px;
+  display:flex;
+  flex-direction:column;
+  position:relative;
+  overflow:hidden;
+}
+.page::after{
+  content:attr(data-pnum);
+  position:absolute;
+  right:56px;bottom:26px;
+  font-size:12px;font-weight:700;color:var(--ink-3);
+  letter-spacing:.06em;
+}
+/* 内容垂直居中：首元素与落款各吃一半余量，避免下半页大片空白 */
+.page:not(.cover) > .eyebrow:first-child{margin-top:auto;}
+
+/* ---------- 排版块 ---------- */
+.eyebrow{
+  font-size:12px;font-weight:800;letter-spacing:.18em;
+  text-transform:uppercase;color:var(--coral-deep);
+  margin:0 0 14px;
+}
+.eyebrow.dim{color:var(--ink-3);}
+h1{
+  font-size:44px;line-height:1.2;font-weight:800;
+  margin:0 0 18px;letter-spacing:-.02em;
+}
+h1.sm{font-size:36px;}
+h2{
+  font-size:31px;line-height:1.28;font-weight:800;
+  margin:0 0 14px;letter-spacing:-.015em;
+}
+h3{font-size:19px;font-weight:800;margin:0 0 6px;}
+p{margin:0 0 12px;}
+.lead{font-size:18px;color:var(--ink-2);line-height:1.62;margin:0 0 26px;}
+.body{font-size:15.5px;color:var(--ink-2);line-height:1.68;}
+.small{font-size:13.5px;color:var(--ink-3);line-height:1.6;}
+.mono{font-variant-numeric:tabular-nums;}
+
+.brandline{
+  margin-top:auto;
+  padding-top:20px;
+  padding-right:80px;
+  border-top:1px solid var(--line);
+  font-size:13px;color:var(--ink-3);line-height:1.5;
+}
+
+/* ---------- 封面 ---------- */
+.cover{
+  background:
+    radial-gradient(680px 420px at 88% -6%, rgba(255,122,77,.20), transparent 62%),
+    radial-gradient(560px 400px at -12% 108%, rgba(79,70,229,.13), transparent 66%),
+    var(--bg);
+}
+.cover .mark{
+  display:flex;align-items:center;gap:10px;
+  font-size:15px;font-weight:800;letter-spacing:.02em;
+  margin-bottom:0;
+}
+.cover .mark i{
+  width:12px;height:12px;border-radius:4px;background:var(--coral);
+  display:inline-block;transform:rotate(10deg);
+}
+.cover h1{font-size:56px;line-height:1.14;margin-bottom:22px;}
+.cover .sub{font-size:19px;color:var(--ink-2);max-width:600px;line-height:1.66;}
+.chips{display:flex;gap:9px;flex-wrap:wrap;margin-top:34px;}
+.chip{
+  font-size:13.5px;font-weight:700;color:var(--indigo);
+  background:var(--indigo-soft);
+  padding:8px 15px;border-radius:999px;
+}
+.chip.warm{color:var(--coral-deep);background:var(--coral-soft);}
+
+/* ---------- 网格 ---------- */
+.grid{display:grid;gap:14px;}
+.g2{grid-template-columns:1fr 1fr;}
+.g3{grid-template-columns:1fr 1fr 1fr;}
+.g4{grid-template-columns:repeat(4,1fr);}
+.gap-lg{gap:20px;}
+
+/* ---------- 卡 ---------- */
+.card{
+  background:var(--paper);
+  border:1px solid var(--line);
+  border-radius:var(--r);
+  padding:22px 22px 20px;
+}
+.card.flat{background:transparent;border-style:dashed;}
+.card.tint{background:var(--coral-soft);border-color:#FBD9C9;}
+.card.ind{background:var(--indigo-soft);border-color:#DBD9FA;}
+.card h3{font-size:17px;}
+.card .body{font-size:14px;line-height:1.62;}
+
+/* 编号断点 */
+.break{display:flex;gap:16px;align-items:flex-start;}
+.break .n{
+  flex:0 0 auto;width:38px;height:38px;border-radius:13px;
+  background:var(--ink);color:#fff;
+  font-size:16px;font-weight:800;
+  display:flex;align-items:center;justify-content:center;
+}
+.break .n.c{background:var(--coral);}
+.break .n.i{background:var(--indigo);}
+.break .t{font-size:16.5px;font-weight:800;margin-bottom:3px;}
+.break .d{font-size:13.5px;color:var(--ink-2);line-height:1.6;}
+
+/* ---------- 流程条 ---------- */
+.flow{display:flex;align-items:stretch;gap:0;margin:6px 0 22px;}
+.flow .step{
+  flex:1;background:var(--paper);border:1px solid var(--line);
+  border-radius:15px;padding:14px 12px;text-align:center;
+}
+.flow .step .k{font-size:11.5px;font-weight:800;letter-spacing:.1em;color:var(--coral-deep);}
+.flow .step .v{font-size:14.5px;font-weight:800;margin-top:3px;}
+.flow .step .s{font-size:12px;color:var(--ink-3);margin-top:2px;}
+.flow .arw{
+  flex:0 0 22px;display:flex;align-items:center;justify-content:center;
+  color:var(--ink-3);font-size:15px;
+}
+
+/* ---------- 大数字 ---------- */
+.stat{
+  background:var(--paper);border:1px solid var(--line);
+  border-radius:20px;padding:20px 18px;
+}
+.stat .v{
+  font-size:38px;font-weight:800;letter-spacing:-.03em;line-height:1.05;
+  background:linear-gradient(135deg,var(--coral),var(--coral-deep));
+  -webkit-background-clip:text;background-clip:text;color:transparent;
+}
+.stat .v small{font-size:16px;font-weight:800;-webkit-text-fill-color:var(--coral-deep);}
+.stat .l{font-size:14px;font-weight:800;margin-top:7px;}
+.stat .s{font-size:12.5px;color:var(--ink-3);margin-top:2px;line-height:1.5;}
+
+/* ---------- 表 ---------- */
+table.t{width:100%;border-collapse:collapse;font-size:13.5px;}
+table.t th{
+  text-align:left;font-size:11.5px;font-weight:800;letter-spacing:.1em;
+  text-transform:uppercase;color:var(--ink-3);
+  padding:0 12px 9px;border-bottom:1.5px solid var(--line);
+}
+table.t td{
+  padding:13px 12px;border-bottom:1px solid var(--line);
+  vertical-align:top;line-height:1.55;color:var(--ink-2);
+}
+table.t tr:last-child td{border-bottom:none;}
+table.t td.k{font-weight:800;color:var(--ink);white-space:nowrap;font-size:14px;}
+table.t td b{color:var(--ink);}
+
+/* ---------- 对照（好/差） ---------- */
+.vs{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
+.vs .box{border-radius:18px;padding:18px 18px 16px;}
+.vs .bad{background:#F6F0EA;border:1px solid var(--line);}
+.vs .good{background:#EAF7F1;border:1px solid #CFEADF;}
+.vs .tag{
+  display:inline-block;font-size:11.5px;font-weight:800;letter-spacing:.08em;
+  padding:3px 10px;border-radius:999px;margin-bottom:9px;
+}
+.vs .bad .tag{background:#EBE1D7;color:#8A7A6C;}
+.vs .good .tag{background:#CDECDE;color:#17764F;}
+.vs .q{font-size:14px;line-height:1.65;color:var(--ink);}
+.vs .why{font-size:12.5px;color:var(--ink-3);margin-top:9px;line-height:1.55;}
+
+/* ---------- 步骤 ---------- */
+.steps{counter-reset:s;}
+.steps .st{
+  counter-increment:s;
+  display:grid;grid-template-columns:44px 1fr;gap:14px;
+  padding:15px 0;border-bottom:1px solid var(--line);
+}
+.steps .st:last-child{border-bottom:none;}
+.steps .st::before{
+  content:counter(s,decimal-leading-zero);
+  font-size:19px;font-weight:800;color:var(--coral);
+  font-variant-numeric:tabular-nums;line-height:1.3;
+}
+.steps .st .t{font-size:15.5px;font-weight:800;margin-bottom:2px;}
+.steps .st .d{font-size:13.5px;color:var(--ink-2);line-height:1.6;}
+.steps .st .d em{
+  font-style:normal;font-weight:800;color:var(--ink);
+  background:#F4EAE0;padding:1px 5px;border-radius:5px;
+}
+
+/* ---------- 提示条 ---------- */
+.tip{
+  display:flex;gap:11px;
+  background:var(--paper);border:1px solid var(--line);
+  border-left:4px solid var(--coral);
+  border-radius:12px;padding:13px 16px;
+  font-size:13.5px;color:var(--ink-2);line-height:1.6;
+}
+.tip .lb{font-weight:800;color:var(--coral-deep);flex:0 0 auto;}
+.tip.i{border-left-color:var(--indigo);}
+.tip.i .lb{color:var(--indigo);}
+
+/* ---------- 勾选清单 ---------- */
+.check{display:flex;gap:10px;font-size:14px;color:var(--ink-2);padding:8px 0;line-height:1.55;}
+.check::before{
+  content:"";flex:0 0 auto;width:16px;height:16px;margin-top:3px;
+  border:1.8px solid var(--ink-3);border-radius:5px;
+}
+
+/* ---------- 工具条（打印隐藏） ---------- */
+.toolbar{
+  position:fixed;right:22px;bottom:22px;z-index:99;
+  display:flex;gap:8px;align-items:center;
+  background:rgba(255,253,250,.94);
+  border:1px solid var(--line);border-radius:999px;
+  padding:8px 10px;box-shadow:0 8px 24px rgba(90,60,40,.16);
+  backdrop-filter:blur(8px);
+}
+.toolbar button{
+  font-family:var(--font);font-size:13px;font-weight:800;
+  color:var(--ink);background:transparent;border:none;
+  padding:7px 13px;border-radius:999px;cursor:pointer;
+}
+.toolbar button:hover{background:var(--coral-soft);color:var(--coral-deep);}
+.toolbar button.main{background:var(--coral);color:#fff;}
+.toolbar .cnt{font-size:12px;font-weight:800;color:var(--ink-3);padding:0 6px;}
+
+/* ---------- 打印 ---------- */
+@page{size:A4 portrait;margin:0;}
+@media print{
+  body{background:#fff;}
+  .toolbar{display:none !important;}
+  .page{
+    margin:0;border-radius:0;box-shadow:none;
+    break-after:page;page-break-after:always;
+    width:210mm;height:297mm;
+  }
+  .page:last-child{break-after:auto;page-break-after:auto;}
+}
+
+</style>
+</head>
+<body>
+
+<!-- ============ 01 封面 ============ -->
+<section class="page cover">
+  <div class="mark"><i></i> ACTION LEAP · 学员与上司</div>
+  <div class="eyebrow" style="margin-top:auto">你被要求做的，只有很少一点</div>
+  <h1>不用注册。<br>点开链接，写几句话。</h1>
+  <p class="sub">这是课程之后的行动迁移记录。它不需要你写报告、不需要装软件、不需要记密码——你只有一个专属链接，和一个明确的问题。</p>
+
+  <div class="grid g2 gap-lg" style="margin-top:34px">
+    <div class="card tint">
+      <div class="eyebrow" style="margin-bottom:8px;color:var(--coral-deep)">学员</div>
+      <h3>约 5 分钟</h3>
+      <p class="body" style="margin-bottom:0">对 4–6 条行动，逐条补两行字：<b>你实际做到了什么</b>，以及<b>数字到了多少</b>。可以分次保存。</p>
+    </div>
+    <div class="card ind">
+      <div class="eyebrow" style="margin-bottom:8px;color:var(--indigo)">直接上司</div>
+      <h3>约 3 分钟</h3>
+      <p class="body" style="margin-bottom:0">看他写了什么，然后写三段：<b>一句总评、两条建议、一个你会做的跟进</b>。没有打分表。</p>
+    </div>
+  </div>
+
+  <div class="brandline">这份记录是给你自己用的，不是给人事归档的。写真实情况，比写得漂亮有用。</div>
+</section>
+
+<!-- ============ 02 学员三步 ============ -->
+<section class="page">
+  <div class="eyebrow">学员 · 怎么做</div>
+  <h2>三步，就这些。</h2>
+
+  <div class="steps" style="margin-top:8px">
+    <div class="st"><div><div class="t">点开你收到的那条专属链接</div><div class="d">微信或邮件里直接点。链接是给你一个人的，<b>不要转发</b>——转发出去别人就能填你的内容。</div></div></div>
+    <div class="st"><div><div class="t">逐条补两栏</div><div class="d">每条行动下有两个框：<em>结果影响</em>（你实际做了什么、带来什么改变）和<em>实际值</em>（有数字目标时才出现，填数字即可）。<br>下面还有两个选填：<em>遇到的困难</em>、<em>未来怎么继续用</em>。建议写，这两栏对上司理解你最有帮助。</div></div></div>
+    <div class="st"><div><div class="t">中途「保存草稿」，想清楚再「提交迁移」</div><div class="d">页面可以随时关，草稿会留着，下次点同一条链接接着写。<br>正式提交之后仍然可以修改，但会留下提交记录。</div></div></div>
+  </div>
+
+  <div class="card" style="margin-top:20px">
+    <h3>页面顶部会告诉你现在该做什么</h3>
+    <p class="body" style="margin-bottom:0">四个阶段依次是：<b>学员填写 → 上司反馈 → 学员提交 → 讲师评价</b>。进度条会标出当前是第几阶段。阶段只是提示，你随时都能填——不因为「还没到那周」而填不了。</p>
+  </div>
+
+  <div class="tip" style="margin-top:16px">
+    <span class="lb">打不开？</span>
+    <span>最常见的原因是链接被截断。把整条链接复制到浏览器地址栏，或请讲师重新发一次。</span>
+  </div>
+
+  <div class="brandline">不要为了填完而编。这条记录唯一的读者是你自己和你的上司。</div>
+</section>
+
+<!-- ============ 03 学员怎么写 ============ -->
+<section class="page">
+  <div class="eyebrow">学员 · 标准</div>
+  <h2>什么叫「写清楚了」。</h2>
+  <p class="lead">判断标准只有一条：<b>一个不在现场的人读完，能相信这件事真的发生过。</b></p>
+
+  <div class="vs">
+    <div class="box bad">
+      <span class="tag">太空</span>
+      <div class="q">「加强了跨部门沟通，效果不错，后续继续努力。」</div>
+      <div class="why">没有具体的事、没有对象、没有结果。上司读完不知道该说什么，只能回一句「很好」。</div>
+    </div>
+    <div class="box good">
+      <span class="tag">可用</span>
+      <div class="q">「按新口径重排了月度产销会：会前发一页数据包，会上只对差异。会议从 90 分钟压到 55 分钟，生产部当场确认了 3 项排产调整。」</div>
+      <div class="why">有动作、有对比、有别人的反应。数字也能填：时长 90 → 55。</div>
+    </div>
+  </div>
+
+  <div class="card" style="margin-top:20px">
+    <h3>四条原则</h3>
+    <p class="body" style="margin-bottom:0">
+      <b>① 写你做过的事，不写你懂的道理。</b>「我理解了这个模型」不是结果，「我用它改了周会流程」才是。<br>
+      <b>② 带上对比。</b>之前多少、现在多少；之前怎么做、现在怎么做。对比才有说服力。<br>
+      <b>③ 写具体的人和场合。</b>「跟生产部」比「跟相关部门」可信十倍。<br>
+      <b>④ 没做到就写没做到。</b>卡在哪里、为什么，这比硬凑一个漂亮答案有价值——上司要的正是这个信息。
+    </p>
+  </div>
+
+  <div class="tip i" style="margin-top:16px">
+    <span class="lb">字数</span>
+    <span>每条 30–80 字足够。<b>不要写作文。</b>写长了没人读，写短了读不出事。</span>
+  </div>
+
+  <div class="brandline">真实的过程比完美的结论更有价值。</div>
+</section>
+
+<!-- ============ 04 上司三步 ============ -->
+<section class="page">
+  <div class="eyebrow">直接上司 · 怎么做</div>
+  <h2>三步，三分钟。</h2>
+  <p class="lead">你收到的是这位下属的专属反馈链接。打开后你能看到他的迁移成果（只读），下方是三个输入框。</p>
+
+  <div class="steps" style="margin-top:6px">
+    <div class="st"><div><div class="t">读一遍他的成果</div><div class="d">每条行动下面有他写的结果影响与实际值，以及他遇到的困难。这一步只需要两分钟——你比任何人都有资格判断这些是不是真的。</div></div></div>
+    <div class="st"><div><div class="t">填三段：总评 / 建议 / 承诺</div><div class="d">页面已把三段的结构排好，照着填即可，不需要你想框架。建议至少两条，可以点「+ 再加一条建议」继续加。</div></div></div>
+    <div class="st"><div><div class="t">「提交反馈」或先「保存草稿」</div><div class="d">提交后讲师就能看到。写之前可以先存草稿，想起来再补——链接不失效。</div></div></div>
+  </div>
+
+  <div class="card" style="margin-top:20px">
+    <h3>你不需要做的事</h3>
+    <p class="body" style="margin-bottom:0">
+      不用注册账号 · 不用打分 · 不用写长篇评语 · 不用参加额外会议。<br>
+      <b>这三段加起来 150 字就够。</b>但它对下属的意义，通常大于一次半小时的面谈——因为它是白纸黑字、会被留存、会被他的讲师看到的。
+    </p>
+  </div>
+
+  <div class="brandline">三分钟，是你能给下属的最低成本、最高信号的支持。</div>
+</section>
+
+<!-- ============ 05 上司怎么写 ============ -->
+<section class="page">
+  <div class="eyebrow">直接上司 · 标准</div>
+  <h2>三段式怎么写。</h2>
+
+  <div class="grid" style="gap:14px;margin-top:4px">
+    <div class="card">
+      <div class="eyebrow" style="margin-bottom:6px;color:var(--coral-deep)">① 整体评语</div>
+      <p class="small" style="margin-bottom:8px">他这次迁移做得怎么样。给一个明确判断，不要客套。</p>
+      <div class="vs" style="gap:10px">
+        <div class="box bad" style="padding:13px"><span class="tag">空</span><div class="q" style="font-size:13px">「表现良好，希望继续努力。」</div></div>
+        <div class="box good" style="padding:13px"><span class="tag">实</span><div class="q" style="font-size:13px">「产销会这一条是真落地了，会议时长和排产确认都能对上。后面三条偏弱，看得出时间被项目挤掉了。」</div></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="eyebrow" style="margin-bottom:6px;color:var(--coral-deep)">② 给他的建议（至少 2 条）</div>
+      <p class="small" style="margin-bottom:8px">具体到下一步能做的动作，不评价人。</p>
+      <div class="vs" style="gap:10px">
+        <div class="box bad" style="padding:13px"><span class="tag">空</span><div class="q" style="font-size:13px">「加强执行力，多主动一些。」</div></div>
+        <div class="box good" style="padding:13px"><span class="tag">实</span><div class="q" style="font-size:13px">「① 下月起由你主持产销会，我只旁听。② 库存周转这条先挑一个品类跑通，别铺开。」</div></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="eyebrow" style="margin-bottom:6px;color:var(--coral-deep)">③ 你承诺的跟进</div>
+      <p class="small" style="margin-bottom:8px">你接下来会怎么支持他。这一句决定他会不会真的继续做。</p>
+      <div class="vs" style="gap:10px">
+        <div class="box bad" style="padding:13px"><span class="tag">空</span><div class="q" style="font-size:13px">「有问题随时找我。」</div></div>
+        <div class="box good" style="padding:13px"><span class="tag">实</span><div class="q" style="font-size:13px">「两周后我们看一次品类库存数据，我到时把那两个供应商的账期给你，帮你争取条件。」</div></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="tip" style="margin-top:16px">
+    <span class="lb">一句提醒</span>
+    <span>这三段会原文进入甲方的汇总报表。<b>写具体，你的管理判断就变成了组织资产；写客套，它就只是一句噪声。</b></span>
+  </div>
+
+  <div class="brandline">反馈的价值不在长度，在于他读完知道下一步做什么。</div>
+</section>
+
+<!-- ============ 06 常见问题 ============ -->
+<section class="page">
+  <div class="eyebrow">附</div>
+  <h2>常见问题。</h2>
+
+  <div class="steps" style="margin-top:6px">
+    <div class="st"><div><div class="t">链接打不开 / 提示链接无效</div><div class="d">多半是链接没复制全（邮件客户端会自动换行截断）。把整条链接粘到浏览器地址栏，或找讲师重发。链接有过期时间的，以讲师给的时间为准。</div></div></div>
+    <div class="st"><div><div class="t">需要注册或下载 App 吗</div><div class="d">不需要。学员和上司全程免登录，链接里已经带了身份凭证。只有讲师本人需要用邮箱登录。</div></div></div>
+    <div class="st"><div><div class="t">我提交了，能改吗</div><div class="d">能。同一条链接再打开就能继续改，「保存草稿」存的是中间状态，「提交迁移」是给讲师看的正式版本。</div></div></div>
+    <div class="st"><div><div class="t">上司没收到链接怎么办</div><div class="d">链接由讲师在派发时生成并分发。请学员主动把上司的姓名和邮箱报给讲师核对——很多问题出在名单里上司信息填错。</div></div></div>
+    <div class="st"><div><div class="t">我填的内容谁能看到</div><div class="d">你的上司（看你的成果并反馈）、讲师（评价用）、以及被邀请的甲方培训负责人 / 业务领导（只读）。<b>同班其他学员看不到</b>。</div></div></div>
+    <div class="st"><div><div class="t">某一行的数字目标做不到怎么办</div><div class="d">如实填实际值，并在「遇到的困难」里说明原因。这比留空或编一个数字有用——讲师评价时会看这一栏。</div></div></div>
+  </div>
+
+  <div class="brandline">遇到问题先看这一页，八成答案在这里。</div>
+</section>
+
+<!-- ============ 07 收尾 ============ -->
+<section class="page cover">
+  <div class="mark"><i></i> ACTION LEAP · 学员与上司</div>
+  <div class="eyebrow" style="margin-top:auto">最后一句</div>
+  <h1 class="sm">这不是考核，<br>是一次留痕。</h1>
+  <p class="sub">课程结束后，真正发生的变化往往没人记录：你改了哪个流程、说服了哪个部门、把哪个数字推动了几个点。这些事如果不写下来，半年后连你自己都记不清。</p>
+
+  <div class="grid g2 gap-lg" style="margin-top:30px">
+    <div class="card">
+      <h3>学员：写给自己</h3>
+      <p class="body" style="margin-bottom:0">四周后回看这页，你会清楚知道哪条方法真的进了你的工作，哪条只是当时听着有道理。<b>这就是你自己的迁移记录。</b></p>
+    </div>
+    <div class="card">
+      <h3>上司：写给他</h3>
+      <p class="body" style="margin-bottom:0">你写下的两句建议和一个承诺，比任何一次口头鼓励都更容易被执行——因为它被记录、被约定、被第三方看见。</p>
+    </div>
+  </div>
+
+  <div class="tip" style="margin-top:26px">
+    <span class="lb">现在</span>
+    <span>找到你收到的那条链接，花 5 分钟（或 3 分钟）写完。剩下的事，系统会替你汇总。</span>
+  </div>
+
+  <div class="brandline">改变之所以留不住，往往只是因为它没被写下来。</div>
+</section>
+
+<script>
+/* Action Leap deck 翻页与打印 —— 极简，无依赖 */
+(function () {
+  var pages = [].slice.call(document.querySelectorAll('.page'));
+  pages.forEach(function (p, i) {
+    p.setAttribute('data-pnum', (i + 1) + ' / ' + pages.length);
+  });
+
+  var bar = document.createElement('div');
+  bar.className = 'toolbar';
+  bar.innerHTML =
+    '<button data-act="prev">←</button>' +
+    '<span class="cnt" id="dcnt">1 / ' + pages.length + '</span>' +
+    '<button data-act="next">→</button>' +
+    '<button class="main" data-act="print">打印 / 存 PDF</button>';
+  document.body.appendChild(bar);
+
+  var cur = 0;
+  function go(i) {
+    cur = Math.max(0, Math.min(pages.length - 1, i));
+    pages[cur].scrollIntoView({ behavior: 'smooth', block: 'start' });
+    document.getElementById('dcnt').textContent = (cur + 1) + ' / ' + pages.length;
+  }
+
+  bar.addEventListener('click', function (e) {
+    var b = e.target.closest('button');
+    if (!b) return;
+    var a = b.getAttribute('data-act');
+    if (a === 'prev') go(cur - 1);
+    else if (a === 'next') go(cur + 1);
+    else if (a === 'print') window.print();
+  });
+
+  document.addEventListener('keydown', function (e) {
+    if (e.key === 'ArrowRight' || e.key === 'PageDown') { e.preventDefault(); go(cur + 1); }
+    if (e.key === 'ArrowLeft' || e.key === 'PageUp') { e.preventDefault(); go(cur - 1); }
+    if (e.key === 'p' && (e.metaKey || e.ctrlKey)) { /* 交给浏览器 */ }
+  });
+
+  // 滚动时同步页码
+  var io = new IntersectionObserver(function (entries) {
+    entries.forEach(function (en) {
+      if (en.isIntersecting) {
+        cur = pages.indexOf(en.target);
+        var el = document.getElementById('dcnt');
+        if (el) el.textContent = (cur + 1) + ' / ' + pages.length;
+      }
+    });
+  }, { threshold: 0.55 });
+  pages.forEach(function (p) { io.observe(p); });
+})();
+
+</script>
+</body>
+</html>
