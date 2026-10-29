@@ -67,8 +67,17 @@
       <button class="btn ghost sm" id="btnNewProject">+ 派发新项目</button>
     </div>
 
+    <div class="ro-banner hidden" id="roBanner">
+      你是这门课程的协作人 · 只读
+      <span class="meta">可以查看迁移表、项目、学员填写、上司反馈与报表；有意见就在对应位置点「建议」，讲师会收到。</span>
+    </div>
+
     <div class="card">
-      <div class="eyebrow">课程信息（阶段一 · 定义）</div>
+      <div style="display:flex;align-items:center;gap:10px">
+        <div class="eyebrow" style="margin:0">课程信息（阶段一 · 定义）</div>
+        <div class="spacer"></div>
+        <button class="cmt-btn" data-cmt-kind="course_info" data-cmt-ref="info" data-cmt-label="课程信息（主题 / 目标）"></button>
+      </div>
       <div class="row2">
         <div><label>客户 / 企业</label><input type="text" id="cClient" placeholder="如：松下电机 中国" /></div>
         <div><label>学员群体 / 班级</label><input type="text" id="cCohort" placeholder="如：储备干部远航班" /></div>
@@ -81,6 +90,7 @@
       <div style="display:flex;gap:10px;align-items:center">
         <div class="eyebrow" style="margin:0">一张迁移表（掌握新方法 / 场景 / 行动 / 量化验收）</div>
         <div class="spacer"></div>
+        <button class="cmt-btn" data-cmt-kind="fw" data-cmt-ref="all" data-cmt-label="迁移表整体"></button>
         <button class="btn ghost sm" id="btnAIDraft">AI 起草</button>
         <button class="btn ghost sm" id="btnUploadFile">上传课程文件起草</button>
         <input type="file" id="fileInput" accept=".txt,.md,.docx" class="hidden">
@@ -103,14 +113,44 @@
     </div>
 
     <div class="card">
-      <div class="eyebrow">课程模版库（评价阶段固化的优秀范例）</div>
+      <div style="display:flex;align-items:center;gap:10px">
+        <div class="eyebrow" style="margin:0">课程模版库（评价阶段固化的优秀范例）</div>
+        <div class="spacer"></div>
+        <button class="cmt-btn" data-cmt-kind="templates" data-cmt-ref="all" data-cmt-label="课程模版库"></button>
+      </div>
       <p class="meta">在「评价固化」里点「★ 选为范例并固化到模版库」的学员成果，会沉淀在这里——这是这门课的组织资产，可直接复用到下一期。</p>
       <div id="tplList"></div>
       <div id="tplEmpty" class="empty hidden">还没有固化任何范例。学员提交并在评价页勾选范例后，这里会自动积累。</div>
     </div>
 
+    <div class="card" id="collabCard">
+      <div style="display:flex;align-items:center;gap:10px">
+        <div class="eyebrow" style="margin:0">协作人（培训负责人 / 业务领导 · 只读）</div>
+        <div class="spacer"></div>
+        <button class="cmt-btn" data-cmt-kind="collab" data-cmt-ref="all" data-cmt-label="协作人设置"></button>
+      </div>
+      <p class="meta">加上他们的邮箱后，他们用自己的邮箱验证码登录，就能看到这门课程的全部内容（迁移表、项目、学员填写、上司反馈、报表）。他们不能修改，但可以在任意位置留建议，你在下面「协作建议」里处理。</p>
+      <div class="row2">
+        <div><label>姓名（可选）</label><input type="text" id="colName" placeholder="如：李经理" /></div>
+        <div><label>邮箱</label><input type="email" id="colEmail" placeholder="hr@company.com" /></div>
+      </div>
+      <div style="margin-top:10px"><button class="btn ghost sm" id="btnAddCollab">添加协作人</button></div>
+      <div id="collabErr" class="error"></div>
+      <div id="collabList" style="margin-top:8px"></div>
+    </div>
+
+    <div class="card" id="inboxCard">
+      <div class="eyebrow">协作建议收件箱</div>
+      <p class="meta">培训负责人 / 业务领导在课程、项目、学员成果旁边留的建议，都会汇到这里。处理完点「标记已处理」。</p>
+      <div id="cmtInbox"></div>
+    </div>
+
     <div class="card">
-      <div class="eyebrow">本项目期次（阶段二 / 三 的实例）</div>
+      <div style="display:flex;align-items:center;gap:10px">
+        <div class="eyebrow" style="margin:0">本项目期次（阶段二 / 三 的实例）</div>
+        <div class="spacer"></div>
+        <button class="cmt-btn" data-cmt-kind="projects" data-cmt-ref="all" data-cmt-label="项目期次"></button>
+      </div>
       <div id="projList" class="grid"></div>
       <div id="projEmpty" class="empty hidden">还没有派发项目。点「派发新项目」把这张表交给某一期学员。</div>
     </div>
@@ -126,7 +166,11 @@
     <div style="margin-bottom:12px"><button class="btn ghost sm" id="btnBackCourse">← 返回课程</button></div>
 
     <div class="card" id="projForm">
-      <div class="eyebrow">项目信息</div>
+      <div style="display:flex;align-items:center;gap:10px">
+        <div class="eyebrow" style="margin:0">项目信息</div>
+        <div class="spacer"></div>
+        <button class="cmt-btn" data-cmt-kind="project" data-cmt-ref="form" data-cmt-label="项目信息与学员名单"></button>
+      </div>
       <div class="row2">
         <div><label>项目名称</label><input type="text" id="pTitle" placeholder="如：2026 Q1 远航班课后迁移" /></div>
         <div><label>班级 / 群体</label><input type="text" id="pCohort" placeholder="默认带出课程群体" /></div>
@@ -182,6 +226,7 @@
 <script src="https://cdn.jsdelivr.net/npm/@tencent-ai/workbuddy-cloud-sdk@dev/lib/index.global.js"></script>
 <script src="publicConfig.js"></script>
 <script src="cloud-core.js"></script>
+<script src="comments.js"></script>
 <script>
 (function () {
   'use strict';
@@ -194,7 +239,8 @@
   A.init();
 
   var BASE = location.origin + location.pathname.replace(/[^/]*$/, '');
-  var state = { course: null, projectId: null, rows: [], roster: [], schedule: null };
+  var state = { course: null, projectId: null, rows: [], roster: [], schedule: null,
+    me: { uid: '', email: '' }, isOwner: true };
 
   function $(id) { return document.getElementById(id); }
   function show(view) {
@@ -246,33 +292,60 @@
   function enter(user) {
     $('who').textContent = user.email || '已登录';
     $('who').classList.remove('hidden'); $('btnLogout').classList.remove('hidden');
-    show('dashboard'); loadCourses();
+    show('dashboard');
+    A.whoami().then(function (me) {
+      state.me = { uid: (me && me.uid) || '', email: (me && me.email) || user.email || '' };
+      loadCourses();
+    }).catch(function () {
+      state.me = { uid: '', email: user.email || '' };
+      loadCourses();
+    });
+  }
+
+  /* 我是不是这门课的 owner（不是 → 协作人，只读） */
+  function isMine(c) {
+    if (!state.me.uid) return true;      // 身份未取到时不误锁自己的编辑入口
+    return c.owner_id === state.me.uid;
   }
 
   /* ---------------- 仪表盘 ---------------- */
   function loadCourses() {
-    A.listCourses().then(function (list) {
+    Promise.all([
+      A.listCourses(),
+      A.listOpenComments().catch(function () { return []; })
+    ]).then(function (res) {
+      var list = res[0] || [], cmts = res[1] || [];
+      var cmap = {};
+      cmts.forEach(function (x) { cmap[x.course_id] = (cmap[x.course_id] || 0) + 1; });
       var box = $('courseList'); box.innerHTML = '';
       $('courseEmpty').classList.toggle('hidden', list.length > 0);
       list.forEach(function (c) {
         var rows = (c.framework || []).length;
-        var projCount = c._proj || 0;
+        var mine = isMine(c);
+        var n = cmap[c.id] || 0;
         var el = document.createElement('div'); el.className = 'card';
-        el.innerHTML = '<div class="eyebrow">' + esc(c.client || '未命名客户') + '</div>' +
+        el.innerHTML =
+          '<div class="eyebrow">' + esc(c.client || '未命名客户') +
+            (mine ? '' : ' <span class="pill">协作 · 只读</span>') + '</div>' +
           '<h3>' + esc(c.theme || '未命名课程') + '</h3>' +
           '<div class="meta">群体：' + esc(c.cohort || '—') + ' · 迁移表 ' + rows + ' 行</div>' +
-          '<div style="margin-top:12px;display:flex;gap:8px"><button class="btn sm" data-open="' + c.id + '">打开</button>' +
-          '<button class="btn ghost sm" data-review="' + c.id + '">查看项目</button></div>';
+          (n ? '<div class="meta" style="margin-top:6px;color:var(--primary-d);font-weight:700">' + n + ' 条协作建议待处理</div>' : '') +
+          '<div style="margin-top:12px;display:flex;gap:8px">' +
+            '<button class="btn sm" data-open="' + c.id + '">' + (mine ? '打开' : '查看') + '</button>' +
+            '<button class="btn ghost sm" data-review="' + c.id + '">查看项目</button></div>';
         box.appendChild(el);
       });
       box.querySelectorAll('[data-open]').forEach(function (b) {
         b.addEventListener('click', function () { openCourse(b.getAttribute('data-open')); });
       });
+      box.querySelectorAll('[data-review]').forEach(function (b) {
+        b.addEventListener('click', function () { openCourse(b.getAttribute('data-review')); });
+      });
     }).catch(function (e) { toast('加载失败：' + (e.message || e)); });
   }
   $('btnNewCourse').addEventListener('click', function () {
-    state.course = { client: '', cohort: '', theme: '', needs: '', framework: [], templates: [] };
-    state.rows = [];
+    state.course = { client: '', cohort: '', theme: '', needs: '', framework: [], templates: [], collaborators: [] };
+    state.rows = []; state.isOwner = true;
     renderCourse(); show('course');
   });
   $('btnBackDash').addEventListener('click', function () { show('dashboard'); loadCourses(); });
@@ -280,32 +353,59 @@
   /* ---------------- 课程详情 + 一表 ---------------- */
   function openCourse(id) {
     A.getCourse(id).then(function (c) {
-      state.course = c; state.rows = (c.framework || []).map(function (r) { return Object.assign({}, r); });
+      state.course = c;
+      state.isOwner = isMine(c);
+      state.rows = (c.framework || []).map(function (r) { return Object.assign({}, r); });
       renderCourse(); show('course'); loadProjects(id);
+      if (window.ALCM) {
+        window.ALCM.init({
+          courseId: c.id, projectId: null, isOwner: state.isOwner, me: state.me,
+          onChange: function () { renderInbox(); }
+        }).then(function () { window.ALCM.decorate(document); });
+      }
     }).catch(function (e) { toast('打开失败：' + (e.message || e)); });
   }
   function renderCourse() {
     var c = state.course;
+    var ro = !state.isOwner && !!c.id;
+
     $('cClient').value = c.client || ''; $('cCohort').value = c.cohort || '';
     $('cTheme').value = c.theme || ''; $('cNeeds').value = c.needs || '';
+
+    $('roBanner').classList.toggle('hidden', !ro);
+    ['cClient', 'cCohort', 'cTheme', 'cNeeds'].forEach(function (id) {
+      var el = $(id); el.readOnly = ro; el.classList.toggle('ro-field', ro);
+    });
+    ['btnAIDraft', 'btnUploadFile', 'btnAddRow', 'btnDelCourse', 'btnNewProject'].forEach(function (id) {
+      var el = $(id); if (el) el.classList.toggle('hidden', ro);
+    });
+    ['btnSaveCourse', 'collabCard', 'inboxCard'].forEach(function (id) {
+      var el = $(id); if (el) el.classList.toggle('hidden', ro);
+    });
+
     renderFw(); renderTemplates();
+    if (!ro) { renderCollab(); renderInbox(); }
   }
   function renderTemplates() {
     var box = $('tplList'); if (!box) return;
     var tpls = state.course.templates || [];
     box.innerHTML = '';
     $('tplEmpty').classList.toggle('hidden', tpls.length > 0);
-    tpls.forEach(function (t) {
+    tpls.forEach(function (t, i) {
       var d = document.createElement('div'); d.className = 'fb';
       d.innerHTML = '<div class="who"><span class="pill">' + esc(t.section || '行动') + '</span> &nbsp;' + esc(t.action || '') + '</div>' +
         '<div class="meta">场景：' + esc(t.scene || '—') + '</div>' +
         (t.resultImpact ? '<div style="margin-top:4px">' + esc(t.resultImpact) + '</div>' : '') +
-        '<div class="meta" style="margin-top:4px">范例来源：' + esc(t.source || '学员') + ' · ' + esc((t.createdAt || '').slice(0, 10)) + '</div>';
+        '<div class="meta" style="margin-top:4px">范例来源：' + esc(t.source || '学员') + ' · ' + esc((t.createdAt || '').slice(0, 10)) + '</div>' +
+        '<div style="margin-top:8px"><button class="cmt-btn" data-cmt-kind="template" ' +
+          'data-cmt-ref="' + esc(t.id || ('t' + i)) + '" data-cmt-label="范例：' + esc(t.action || '未命名') + '"></button></div>';
       box.appendChild(d);
     });
+    if (window.ALCM) window.ALCM.decorate(box);
   }
   function renderFw() {
     var body = $('fwBody'); body.innerHTML = '';
+    var ro = !state.isOwner && !!state.course.id;
     state.rows.forEach(function (r, i) {
       var tr = document.createElement('tr');
       tr.innerHTML =
@@ -316,13 +416,22 @@
         '<td><input data-i="' + i + '" data-f="target" value="' + esc(r.target) + '" style="width:90px"></td>' +
         '<td><select data-i="' + i + '" data-f="direction"><option value="up">↑提升</option><option value="down">↓下降</option></select></td>' +
         '<td><input data-i="' + i + '" data-f="note" value="' + esc(r.note) + '" style="min-width:170px"></td>' +
-        '<td><button class="btn ghost sm" data-del="' + i + '">删</button></td>';
+        '<td style="white-space:nowrap;text-align:right">' +
+          '<button class="cmt-btn" data-cmt-kind="fw_row" data-cmt-ref="' + esc(r.id || ('i' + i)) + '" ' +
+            'data-cmt-label="第' + (i + 1) + '行 · ' + esc(r.section || '行动') + '"></button>' +
+          (ro ? '' : ' <button class="btn ghost sm" data-del="' + i + '">删</button>') +
+        '</td>';
       body.appendChild(tr);
     });
+    if (ro) {
+      body.querySelectorAll('input,select').forEach(function (el) {
+        el.disabled = true; el.classList.add('ro-field');
+      });
+    }
     body.querySelectorAll('input,select').forEach(function (inp) {
       inp.addEventListener('input', function () {
         var i = +inp.getAttribute('data-i'), f = inp.getAttribute('data-f');
-        state.rows[i][f] = inp.value;
+        if (state.rows[i]) state.rows[i][f] = inp.value;
       });
     });
     body.querySelectorAll('[data-del]').forEach(function (b) {
@@ -331,6 +440,7 @@
     body.querySelectorAll('select[data-f="direction"]').forEach(function (s) {
       s.value = state.rows[+s.getAttribute('data-i')].direction || 'up';
     });
+    if (window.ALCM) window.ALCM.decorate(body);
   }
   $('btnAddRow').addEventListener('click', function () {
     state.rows.push({ id: A.uid('a'), section: '', scene: '', action: '', target: '', direction: 'up', note: '' });
@@ -354,6 +464,53 @@
     if (!confirm('确认删除该课程？其下项目的学员数据将不可恢复。')) return;
     A.deleteCourse(state.course.id).then(function () { show('dashboard'); loadCourses(); });
   });
+
+  /* ---------------- 协作人（只读共享） ---------------- */
+  function renderCollab() {
+    var box = $('collabList'); if (!box) return;
+    var list = (state.course.collaborators || []);
+    if (!list.length) {
+      box.innerHTML = '<div class="meta">还没有协作人。加上培训负责人 / 业务领导的邮箱，他们用自己的邮箱登录就能查看这门课程。</div>';
+      return;
+    }
+    box.innerHTML = list.map(function (x) {
+      return '<div class="collab-row">' +
+        '<span class="em">' + esc(x.name || x.email) + '</span>' +
+        '<span class="meta">' + esc(x.email) + '</span>' +
+        '<span class="pill">只读</span><div class="spacer"></div>' +
+        '<button class="btn ghost sm" data-rmcol="' + esc(x.email) + '">移除</button></div>';
+    }).join('');
+    box.querySelectorAll('[data-rmcol]').forEach(function (b) {
+      b.addEventListener('click', function () {
+        var em = b.getAttribute('data-rmcol');
+        if (!confirm('移除协作人 ' + em + '？')) return;
+        A.removeCollaborator(state.course.id, em).then(function (c) {
+          state.course.collaborators = c.collaborators || [];
+          renderCollab(); toast('已移除');
+        }).catch(function (e) { $('collabErr').textContent = '移除失败：' + (e.message || e); });
+      });
+    });
+  }
+
+  if ($('btnAddCollab')) {
+    $('btnAddCollab').addEventListener('click', function () {
+      var email = $('colEmail').value.trim();
+      var name = $('colName').value.trim();
+      if (!state.course.id) { $('collabErr').textContent = '请先保存课程，再添加协作人'; return; }
+      $('collabErr').textContent = '';
+      A.addCollaborator(state.course.id, email, name).then(function (c) {
+        state.course.collaborators = c.collaborators || [];
+        $('colEmail').value = ''; $('colName').value = '';
+        renderCollab(); toast('已添加协作人');
+      }).catch(function (e) { $('collabErr').textContent = (e.message || e); });
+    });
+  }
+
+  /* ---------------- 协作建议收件箱 ---------------- */
+  function renderInbox() {
+    var box = $('cmtInbox'); if (!box || !window.ALCM) return;
+    box.innerHTML = window.ALCM.inboxHTML();
+  }
   function applyDraft(rows, noteText) {
     state.rows = rows.map(function (r) {
       return { id: A.uid('a'), section: r.section || '', scene: r.scene || '', action: r.action || '',
@@ -607,6 +764,29 @@
       state.projectId = p.id; state.schedule = p.schedule || A.defaultSchedule();
       $('pTitle').value = p.title || ''; $('pCohort').value = p.cohort || state.course.cohort || '';
       renderLinks(p); renderPhases(); show('project');
+      applyProjectReadonly();
+      if (window.ALCM && state.course && state.course.id) {
+        window.ALCM.init({
+          courseId: state.course.id, projectId: p.id, isOwner: state.isOwner, me: state.me,
+          onChange: function () { renderInbox(); }
+        }).then(function () { window.ALCM.decorate(document); });
+      }
+    });
+  }
+
+  /* 协作人进入项目页时：全部字段只读，派发类按钮隐藏 */
+  function applyProjectReadonly() {
+    var ro = !state.isOwner;
+    ['btnGenLinks', 'btnAddStudent', 'btnBatchToggle', 'btnParseBatch', 'btnCopyAll', 'btnDownloadCsv']
+      .forEach(function (id) {
+        var el = $(id); if (el) el.classList.toggle('hidden', ro);
+      });
+    ['pTitle', 'pCohort', 'pStart', 'pEnd', 'batchText'].forEach(function (id) {
+      var el = $(id); if (el) { el.readOnly = ro; el.classList.toggle('ro-field', ro); }
+    });
+    document.querySelectorAll('#phaseTable input, #roster input, #roster [data-rdel]').forEach(function (el) {
+      if (el.hasAttribute('data-rdel')) el.classList.toggle('hidden', ro);
+      else { el.readOnly = ro; el.classList.toggle('ro-field', ro); }
     });
   }
   function copy(text) {

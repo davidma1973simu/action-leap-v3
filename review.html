@@ -81,6 +81,7 @@
 <script src="https://cdn.jsdelivr.net/npm/@tencent-ai/workbuddy-cloud-sdk@dev/lib/index.global.js"></script>
 <script src="publicConfig.js"></script>
 <script src="cloud-core.js"></script>
+<script src="comments.js"></script>
 <script>
 (function () {
   'use strict';
@@ -90,7 +91,8 @@
 
   var q = new URLSearchParams(location.search);
   var pid = q.get('pid');
-  var state = { project: null, subs: {}, fb: {}, reviews: {}, wrapup: {} };
+  var state = { project: null, subs: {}, fb: {}, reviews: {}, wrapup: {},
+    me: { uid: '', email: '' }, isOwner: true };
 
   function $(id) { return document.getElementById(id); }
   function show(view) { ['login', 'review'].forEach(function (v) { $('view-' + v).classList.toggle('hidden', v !== view); }); }
@@ -125,7 +127,14 @@
 
   function enter(user) {
     $('who').textContent = user.email || '已登录'; $('who').classList.remove('hidden'); $('btnLogout').classList.remove('hidden');
-    show('review'); load();
+    show('review');
+    A.whoami().then(function (me) {
+      state.me = { uid: (me && me.uid) || '', email: (me && me.email) || user.email || '' };
+      load();
+    }).catch(function () {
+      state.me = { uid: '', email: user.email || '' };
+      load();
+    });
   }
 
   /* ---------------- 数据 ---------------- */
@@ -137,7 +146,14 @@
       state.fb = indexByToken(res[2]);
       state.reviews = indexByToken(res[3]);
       state.wrapup = res[0].wrapup || {};
+      state.isOwner = !state.me.uid ? true : (res[0].owner_id === state.me.uid);
       render();
+      if (window.ALCM) {
+        window.ALCM.init({
+          courseId: res[0].course_id, projectId: res[0].id,
+          isOwner: state.isOwner, me: state.me
+        }).then(function () { window.ALCM.decorate(document); });
+      }
     }).catch(function (e) { toast('加载失败：' + (e.message || e)); });
   }
   function indexByToken(arr) { var m = {}; (arr || []).forEach(function (x) { m[x.student_token] = x; }); return m; }
@@ -158,8 +174,8 @@
     var fb = $('finalizeBox');
     if (info.closed) { now.className = 'tl-closed'; now.textContent = '✓ 本项目已收尾。'; fb.innerHTML = ''; }
     else if (info.ended) {
-      now.className = 'tl-now'; now.innerHTML = '全部阶段已结束，可<b>收尾项目</b>并导出报表。';
-      fb.innerHTML = '<button class="btn sm" id="btnFinalize">收尾项目</button>';
+      now.className = 'tl-now'; now.innerHTML = '全部阶段已结束，' + (state.isOwner ? '可<b>收尾项目</b>并导出报表。' : '等待讲师收尾并导出报表。');
+      fb.innerHTML = state.isOwner ? '<button class="btn sm" id="btnFinalize">收尾项目</button>' : '';
       var b = $('btnFinalize'); if (b) b.addEventListener('click', finalizeProject);
     } else if (info.currentIndex < 0) { now.className = 'tl-now'; now.textContent = '时间线尚未开始（开始日 ' + info.startStr + '）。'; fb.innerHTML = ''; }
     else { now.className = 'tl-now'; now.innerHTML = '当前：第 ' + (info.currentIndex + 1) + ' 阶段 · <b>' + A.esc(info.currentLabel) + '</b>'; fb.innerHTML = ''; }
@@ -167,6 +183,7 @@
 
   function render() {
     var p = state.project;
+    var ro = !state.isOwner;
     $('rClient').textContent = (p.client || '') + ' · ' + (p.cohort || '');
     $('rTitle').textContent = p.title || '评价固化';
     renderTimeline(p.schedule);
@@ -174,6 +191,11 @@
     renderStudents();
     renderWrapup();
     $('btnReport').setAttribute('href', 'report.html?pid=' + pid);
+    if ($('wrapSummary')) {
+      $('wrapSummary').readOnly = ro;
+      $('wrapSummary').classList.toggle('ro-field', ro);
+    }
+    if ($('btnSaveWrap')) $('btnSaveWrap').classList.toggle('hidden', ro);
   }
 
   function renderStats() {
@@ -218,7 +240,10 @@
       var badges = '';
       badges += sub ? '<span class="badge ok">已提交</span>' : '<span class="badge pending">未提交</span>';
       badges += fb ? '<span class="badge indigo">上司已反馈</span>' : '<span class="badge muted">待上司反馈</span>';
-      var html = '<div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap"><div class="who" style="font-size:17px;font-weight:800">' + A.esc(s.name) + '</div>' + badges + '</div>';
+      var ro = !state.isOwner;
+      var html = '<div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap"><div class="who" style="font-size:17px;font-weight:800">' + A.esc(s.name) + '</div>' + badges +
+        '<div class="spacer"></div>' +
+        '<button class="cmt-btn" data-cmt-kind="student" data-cmt-ref="' + A.esc(s.token) + '" data-cmt-label="学员：' + A.esc(s.name) + '"></button></div>';
 
       // 学员成果
       if (sub && sub.rows && sub.rows.length) {
@@ -247,34 +272,39 @@
         html += '</div>';
       }
 
-      // 讲师评价
+      // 讲师评价（协作人只读）
       var rating = rev ? (rev.rating || '') : '';
       var comment = rev ? (rev.comment || '') : '';
       var exemplar = (rev && rev.exemplar) ? rev.exemplar : [];
-      html += '<div class="eyebrow" style="margin-top:14px">你的评价</div>';
-      html += '<label>评级</label><select id="rate_' + s.token + '"><option value="">— 未评 —</option><option value="A"' + (rating === 'A' ? ' selected' : '') + '>A · 优秀范例</option><option value="B"' + (rating === 'B' ? ' selected' : '') + '>B · 达标</option><option value="C"' + (rating === 'C' ? ' selected' : '') + '>C · 待提升</option></select>';
-      html += '<label>评语（可沉淀为组织资产）</label><textarea id="cmt_' + s.token + '" rows="2" placeholder="这次迁移的亮点、可复制的做法、给该学员的下一步">' + A.esc(comment) + '</textarea>';
+      html += '<div class="eyebrow" style="margin-top:14px">' + (ro ? '讲师评价（只读）' : '你的评价') + '</div>';
+      html += '<label>评级</label><select id="rate_' + s.token + '"' + (ro ? ' disabled class="ro-field"' : '') + '><option value="">— 未评 —</option><option value="A"' + (rating === 'A' ? ' selected' : '') + '>A · 优秀范例</option><option value="B"' + (rating === 'B' ? ' selected' : '') + '>B · 达标</option><option value="C"' + (rating === 'C' ? ' selected' : '') + '>C · 待提升</option></select>';
+      html += '<label>评语（可沉淀为组织资产）</label><textarea id="cmt_' + s.token + '" rows="2"' + (ro ? ' readonly class="ro-field"' : '') + ' placeholder="这次迁移的亮点、可复制的做法、给该学员的下一步">' + A.esc(comment) + '</textarea>';
       html += '<div id="ex_' + s.token + '"></div>';
-      html += '<div style="display:flex;gap:10px;margin-top:10px;flex-wrap:wrap"><button class="btn sm" data-save="' + s.token + '">保存评价</button>';
-      if (sub && sub.rows && sub.rows.length) html += '<button class="btn ghost sm" data-ex="' + s.token + '">★ 选范例并固化到模版库</button>';
-      html += '</div>';
+      if (!ro) {
+        html += '<div style="display:flex;gap:10px;margin-top:10px;flex-wrap:wrap"><button class="btn sm" data-save="' + s.token + '">保存评价</button>';
+        if (sub && sub.rows && sub.rows.length) html += '<button class="btn ghost sm" data-ex="' + s.token + '">★ 选范例并固化到模版库</button>';
+        html += '</div>';
+      }
 
       card.innerHTML = html;
       box.appendChild(card);
 
-      renderExSelector(s.token, sub, exemplar);
-      card.querySelector('[data-save="' + s.token + '"]').addEventListener('click', function () { saveReview(s.token); });
+      renderExSelector(s.token, sub, exemplar, ro);
+      var sv = card.querySelector('[data-save="' + s.token + '"]');
+      if (sv) sv.addEventListener('click', function () { saveReview(s.token); });
       var exBtn = card.querySelector('[data-ex="' + s.token + '"]');
       if (exBtn) exBtn.addEventListener('click', function () { pickExemplar(s.token, sub); });
     });
+    if (window.ALCM) window.ALCM.decorate(box);
   }
 
-  function renderExSelector(token, sub, exemplar) {
+  function renderExSelector(token, sub, exemplar, ro) {
     var box = $('ex_' + token); if (!box) return;
+    if (!sub || !sub.rows || !sub.rows.length) { box.innerHTML = ''; return; }
     var ex = exemplar || [];
     box.innerHTML = sub.rows.map(function (r, i) {
       var checked = ex.some(function (e) { return e.id === r.id; }) ? 'checked' : '';
-      return '<label style="display:flex;gap:8px;align-items:flex-start;margin:4px 0;font-weight:500"><input type="checkbox" data-exi="' + i + '" ' + checked + ' style="width:auto;margin-top:6px"> <span>选为范例：<b>' + A.esc(r.action || '') + '</b> — ' + A.esc((r.resultImpact || '').slice(0, 40)) + '</span></label>';
+      return '<label style="display:flex;gap:8px;align-items:flex-start;margin:4px 0;font-weight:500"><input type="checkbox" data-exi="' + i + '" ' + checked + (ro ? ' disabled' : '') + ' style="width:auto;margin-top:6px"> <span>选为范例：<b>' + A.esc(r.action || '') + '</b> — ' + A.esc((r.resultImpact || '').slice(0, 40)) + '</span></label>';
     }).join('');
     box.querySelectorAll('input[data-exi]').forEach(function (cb) {
       cb.addEventListener('change', function () {

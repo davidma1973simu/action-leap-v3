@@ -234,6 +234,82 @@
     });
   }
 
+  /* ---------------- 当前登录身份（uid + email） ---------------- */
+  function whoami() {
+    return getCloud().database.rpc('whoami')
+      .then(function (r) {
+        if (r.error) throw r.error;
+        return r.data || { uid: '', email: '' };
+      });
+  }
+
+  /* ---------------- 协作人（只读共享：培训负责人 / 业务领导） ----------------
+   * 协作人凭自己的邮箱登录即可看到同一门课程的全部内容：
+   * 迁移表、项目、学员填写、上司反馈、评价、报表。
+   * 写入权限仍在 owner 手上（数据库 RLS 已限制），协作人只能批注。
+   * ------------------------------------------------------------------ */
+  function listCollaborators(courseId) {
+    return getCourse(courseId).then(function (c) { return c.collaborators || []; });
+  }
+  function addCollaborator(courseId, email, name, role) {
+    var e = (email || '').trim().toLowerCase();
+    if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(e)) return Promise.reject(new Error('请输入有效邮箱'));
+    return getCourse(courseId).then(function (c) {
+      var list = c.collaborators || [];
+      var dup = list.some(function (x) { return (x.email || '').toLowerCase() === e; });
+      if (dup) throw new Error('该邮箱已在协作人列表中');
+      list.push({ email: e, name: (name || '').trim(), role: role || 'viewer', addedAt: new Date().toISOString() });
+      return getCloud().database.from('courses').update({ collaborators: list })
+        .eq('id', courseId).select().single()
+        .then(function (r) { if (r.error) throw r.error; return r.data; });
+    });
+  }
+  function removeCollaborator(courseId, email) {
+    var e = (email || '').trim().toLowerCase();
+    return getCourse(courseId).then(function (c) {
+      var list = (c.collaborators || []).filter(function (x) { return (x.email || '').toLowerCase() !== e; });
+      return getCloud().database.from('courses').update({ collaborators: list })
+        .eq('id', courseId).select().single()
+        .then(function (r) { if (r.error) throw r.error; return r.data; });
+    });
+  }
+
+  /* ---------------- 批注（协作人在任意位置留建议） ---------------- */
+  function listComments(courseId) {
+    return getCloud().database.from('comments').select('*').eq('course_id', courseId)
+      .order('created_at', { ascending: true })
+      .then(function (r) { if (r.error) throw r.error; return r.data || []; });
+  }
+  function addComment(c) {
+    return getCloud().database.from('comments').insert({
+      course_id: c.courseId,
+      project_id: c.projectId || null,
+      target_kind: c.kind,
+      target_ref: String(c.ref == null ? '' : c.ref),
+      anchor_label: c.label || '',
+      body: c.body,
+      author_email: c.authorEmail || '',
+      author_name: c.authorName || '',
+      status: 'open'
+    }).select().single().then(function (r) { if (r.error) throw r.error; return r.data; });
+  }
+  function listOpenComments() {
+    return getCloud().database.from('comments').select('*').eq('status', 'open')
+      .order('created_at', { ascending: false })
+      .then(function (r) { if (r.error) throw r.error; return r.data || []; });
+  }
+  function setCommentStatus(id, status) {
+    return getCloud().database.from('comments').update({
+      status: status,
+      resolved_at: status === 'resolved' ? new Date().toISOString() : null
+    }).eq('id', id).select().single()
+      .then(function (r) { if (r.error) throw r.error; return r.data; });
+  }
+  function deleteComment(id) {
+    return getCloud().database.from('comments').delete().eq('id', id)
+      .then(function (r) { if (r.error) throw r.error; });
+  }
+
   /* ---------------- LLM（关键less，AI 仅后台出现） ---------------- */
   function listModels() {
     return getCloud().llm.models.list()
@@ -285,6 +361,10 @@
     getSubmissionForSup: getSubmissionForSup, saveSupFeedback: saveSupFeedback,
     getSubmissions: getSubmissions, getFeedback: getFeedback, getReviews: getReviews,
     saveReview: saveReview, appendTemplate: appendTemplate,
+    whoami: whoami,
+    listCollaborators: listCollaborators, addCollaborator: addCollaborator, removeCollaborator: removeCollaborator,
+    listComments: listComments, listOpenComments: listOpenComments, addComment: addComment,
+    setCommentStatus: setCommentStatus, deleteComment: deleteComment,
     listModels: listModels, draftRows: draftRows
   };
 })(window);

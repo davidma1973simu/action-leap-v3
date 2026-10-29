@@ -70,6 +70,7 @@
 <script src="https://cdn.jsdelivr.net/npm/@tencent-ai/workbuddy-cloud-sdk@dev/lib/index.global.js"></script>
 <script src="publicConfig.js"></script>
 <script src="cloud-core.js"></script>
+<script src="comments.js"></script>
 <script>
 (function () {
   'use strict';
@@ -110,7 +111,16 @@
   A.auth.onAuthStateChange(function (ev, session) { if (session && session.user) enter(); else show('login'); });
   A.auth.getSession().then(function (r) { if (r.data && r.data.user) enter(); else show('login'); });
 
-  function enter() { show('report'); load(); }
+  function enter() {
+    show('report');
+    A.whoami().then(function (me) {
+      state.me = { uid: (me && me.uid) || '', email: (me && me.email) || '' };
+      load();
+    }).catch(function () {
+      state.me = { uid: '', email: '' };
+      load();
+    });
+  }
 
   function load() {
     if (!pid) { toast('缺少项目参数'); return; }
@@ -118,7 +128,17 @@
       state.project = res[0];
       state.subs = index(res[1]); state.fb = index(res[2]); state.reviews = index(res[3]);
       state.wrapup = res[0].wrapup || {};
-      return A.getCourse(state.project.course_id).then(function (c) { state.course = c; render(); });
+      return A.getCourse(state.project.course_id).then(function (c) {
+        state.course = c;
+        state.isOwner = !state.me.uid ? true : (c.owner_id === state.me.uid);
+        render();
+        if (window.ALCM) {
+          window.ALCM.init({
+            courseId: c.id, projectId: state.project.id,
+            isOwner: state.isOwner, me: state.me
+          }).then(function () { window.ALCM.decorate(document); });
+        }
+      });
     }).catch(function (e) { toast('加载失败：' + (e.message || e)); });
   }
   function index(arr) { var m = {}; (arr || []).forEach(function (x) { m[x.student_token] = x; }); return m; }
@@ -240,6 +260,24 @@
 
     $('report').innerHTML = h;
     REPORT_HTML = h;
+
+    // 每一块旁边挂「建议」入口：协作人可对报表任何区块留意见
+    if (window.ALCM) {
+      var secs = $('report').querySelectorAll('.rsec');
+      Array.prototype.forEach.call(secs, function (sec) {
+        var h2 = sec.querySelector('h2'); if (!h2) return;
+        var nEl = h2.querySelector('.n');
+        var n = nEl ? nEl.textContent.trim() : '';
+        var label = '报表第 ' + n + ' 块 · ' + h2.textContent.replace(/^\s*\d+\s*/, '').replace(/\s+/g, ' ').trim();
+        var b = document.createElement('button');
+        b.className = 'cmt-btn';
+        b.setAttribute('data-cmt-kind', 'report');
+        b.setAttribute('data-cmt-ref', 'sec' + (n || 'x'));
+        b.setAttribute('data-cmt-label', label);
+        h2.appendChild(b);
+      });
+      window.ALCM.decorate($('report'));
+    }
   }
 
   /* 导出 */
