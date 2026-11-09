@@ -158,7 +158,7 @@
   function render() {
     var p = state.project, c = state.course || {};
     var students = p.students || [];
-    var fw = c.framework || [];
+    var fw = (p.framework && p.framework.length) ? p.framework : (c.framework || []);
     var info = p.schedule && p.schedule.startDate ? A.phaseInfo({ schedule: p.schedule }) : null;
     var now = new Date().toISOString().slice(0, 10);
 

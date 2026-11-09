@@ -67,7 +67,6 @@
   }
   function saveCourse(course) {
     var payload = {
-      client: course.client || '', cohort: course.cohort || '',
       theme: course.theme || '', needs: course.needs || '',
       framework: course.framework || [], templates: course.templates || []
     };
@@ -100,6 +99,8 @@
       client: p.client || '', cohort: p.cohort || '',
       start_date: p.start_date || null, end_date: p.end_date || null,
       students: p.students || [],
+      framework: p.framework || [],
+      collaborators: p.collaborators || [],
       schedule: p.schedule || {}, wrapup: p.wrapup || {}
     };
     if (p.id) {
@@ -243,35 +244,42 @@
       });
   }
 
-  /* ---------------- 协作人（只读共享：培训负责人 / 业务领导） ----------------
-   * 协作人凭自己的邮箱登录即可看到同一门课程的全部内容：
-   * 迁移表、项目、学员填写、上司反馈、评价、报表。
+  /* ---------------- 项目协作人（只读共享：甲方培训负责人 / 业务领导） ----------------
+   * 协作人绑定在「项目」上：同一个课程的不同期次，可以邀请不同的人。
+   * 他们凭自己的邮箱登录，能看到本项目所在的课程、本项目迁移表、学员填写、反馈、报表。
    * 写入权限仍在 owner 手上（数据库 RLS 已限制），协作人只能批注。
    * ------------------------------------------------------------------ */
-  function listCollaborators(courseId) {
-    return getCourse(courseId).then(function (c) { return c.collaborators || []; });
+  function listCollaborators(projectId) {
+    return getProject(projectId).then(function (p) { return p.collaborators || []; });
   }
-  function addCollaborator(courseId, email, name, role) {
+  function addCollaborator(projectId, email, name, role) {
     var e = (email || '').trim().toLowerCase();
     if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(e)) return Promise.reject(new Error('请输入有效邮箱'));
-    return getCourse(courseId).then(function (c) {
-      var list = c.collaborators || [];
+    return getProject(projectId).then(function (p) {
+      var list = p.collaborators || [];
       var dup = list.some(function (x) { return (x.email || '').toLowerCase() === e; });
-      if (dup) throw new Error('该邮箱已在协作人列表中');
+      if (dup) throw new Error('该邮箱已在本项目协作人列表中');
       list.push({ email: e, name: (name || '').trim(), role: role || 'viewer', addedAt: new Date().toISOString() });
-      return getCloud().database.from('courses').update({ collaborators: list })
-        .eq('id', courseId).select().single()
+      return getCloud().database.from('projects').update({ collaborators: list })
+        .eq('id', projectId).select().single()
         .then(function (r) { if (r.error) throw r.error; return r.data; });
     });
   }
-  function removeCollaborator(courseId, email) {
+  function removeCollaborator(projectId, email) {
     var e = (email || '').trim().toLowerCase();
-    return getCourse(courseId).then(function (c) {
-      var list = (c.collaborators || []).filter(function (x) { return (x.email || '').toLowerCase() !== e; });
-      return getCloud().database.from('courses').update({ collaborators: list })
-        .eq('id', courseId).select().single()
+    return getProject(projectId).then(function (p) {
+      var list = (p.collaborators || []).filter(function (x) { return (x.email || '').toLowerCase() !== e; });
+      return getCloud().database.from('projects').update({ collaborators: list })
+        .eq('id', projectId).select().single()
         .then(function (r) { if (r.error) throw r.error; return r.data; });
     });
+  }
+
+  /* 只改「本项目的迁移表」（不动其它字段，避免覆盖名单 / 时间线） */
+  function saveProjectRows(projectId, rows) {
+    return getCloud().database.from('projects').update({ framework: rows || [] })
+      .eq('id', projectId).select().single()
+      .then(function (r) { if (r.error) throw r.error; return r.data; });
   }
 
   /* ---------------- 批注（协作人在任意位置留建议） ---------------- */
@@ -363,6 +371,7 @@
     saveReview: saveReview, appendTemplate: appendTemplate,
     whoami: whoami,
     listCollaborators: listCollaborators, addCollaborator: addCollaborator, removeCollaborator: removeCollaborator,
+    saveProjectRows: saveProjectRows,
     listComments: listComments, listOpenComments: listOpenComments, addComment: addComment,
     setCommentStatus: setCommentStatus, deleteComment: deleteComment,
     listModels: listModels, draftRows: draftRows
