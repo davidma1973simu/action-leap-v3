@@ -43,13 +43,19 @@ h1 em{font-style:normal;color:var(--coral-deep);}
 .person .ln b{color:var(--ink);font-weight:700;}
 .person .out{font-size:12px;color:var(--coral-deep);font-weight:700;margin-top:5px;line-height:1.4;}
 
-.chain{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;}
-.step{background:var(--paper);border:1px solid var(--line);border-radius:13px;padding:9px 11px;position:relative;}
+.chain{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;}
+.step{background:var(--paper);border:1px solid var(--line);border-radius:13px;padding:12px 13px;position:relative;}
 .step .n{font-size:10.5px;font-weight:800;color:var(--coral-deep);letter-spacing:.1em;}
 .step .t{font-size:12.5px;font-weight:800;margin:1px 0 3px;}
 .step .who{font-size:10.5px;color:var(--ink-3);font-weight:700;}
-.step .o{font-size:11.5px;color:var(--ink-2);line-height:1.4;margin-top:4px;}
+.step .o{font-size:12px;color:var(--ink-2);line-height:1.5;margin-top:5px;}
 .step.span2{grid-column:span 2;}
+
+.quote{
+  margin-top:26px;padding:2px 0 2px 16px;border-left:3px solid var(--coral);
+  font-size:15px;line-height:1.6;color:var(--ink-2);font-weight:600;
+}
+.quote b{color:var(--ink);}
 
 .formula{
   margin-top:auto;background:linear-gradient(180deg,#FFF9F4,#FFEFE6);
@@ -83,7 +89,7 @@ h1 em{font-style:normal;color:var(--coral-deep);}
     <div class="person">
       <div class="role"><span class="no">01</span><span class="nm">讲师 / 顾问</span><span class="tag">唯一管理员</span></div>
       <div class="ln">建一次<b>课程母版</b>（一张通用迁移表），之后每个客户派发一个<b>项目</b>，母版复制一份给该项目、可随时为客户定制。</div>
-      <div class="out">产出：可复用组织资产 + 每期可交付的成果报告（续单依据）</div>
+      <div class="out">产出：可复用组织资产 + 每期成果报告（续单依据）</div>
     </div>
     <div class="person">
       <div class="role"><span class="no">02</span><span class="nm">甲方培训负责人</span><span class="tag">协作 · 只读</span></div>
@@ -100,12 +106,10 @@ h1 em{font-style:normal;color:var(--coral-deep);}
       <div class="ln">点开链接就填，不注册、不装 App。每条行动只补<b>结果与实际值</b>——大约 30 秒一件事。</div>
       <div class="out">产出：学的东西第一次真正落在自己的活上，且被看见</div>
     </div>
-    <div class="person span2" style="grid-column:span 2;display:flex;gap:14px;align-items:flex-start;">
-      <div style="flex:1">
-        <div class="role"><span class="no">05</span><span class="nm">直接上司</span><span class="tag">免登录</span></div>
-        <div class="ln">收到一条专属链接，看下属填的行动，给<b>三段反馈</b>：总体评价、具体建议、后续承诺。全程约 5 分钟，不必回忆课程内容。</div>
-      </div>
-      <div class="out" style="margin:0;max-width:250px">产出：辅导有抓手<br>——从「学得怎么样」变成「这条行动做了没有、差在哪、下一步怎么补」</div>
+    <div class="person span2" style="grid-column:span 2;">
+      <div class="role"><span class="no">05</span><span class="nm">直接上司</span><span class="tag">免登录</span></div>
+      <div class="ln">收到一条专属链接，看下属填的行动，给<b>三段反馈</b>：总体评价、具体建议、后续承诺。全程约 5 分钟，不必回忆课程内容。</div>
+      <div class="out">产出：辅导终于有抓手——从「学得怎么样」变成「这条行动做了没有、差在哪、下一步怎么补」</div>
     </div>
   </div>
 
@@ -121,6 +125,8 @@ h1 em{font-style:normal;color:var(--coral-deep);}
     <div class="step"><div class="n">STEP 6</div><div class="t">讲师评价</div><div class="who">讲师 · 第 4 周</div><div class="o">A / B / C 分级 + 逐条点评 + 选范例</div></div>
     <div class="step span2"><div class="n">STEP 7</div><div class="t">汇总报表与复盘萃取</div><div class="who">讲师 + 培训负责人</div><div class="o">一页纸成果报告（可打印归档）+ 复盘把优秀做法固化成下一期的起点；范例进课程模版库，项目越多母版越强</div></div>
   </div>
+
+  <div class="quote">讲师卖的是课，甲方买的是<b>课之后发生了什么</b>。<br>这套系统把那段过程变成能交付、能核对、能上会的东西。</div>
 
   <div class="formula">
     <div class="lb">价值公式</div>
