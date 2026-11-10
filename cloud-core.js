@@ -310,7 +310,34 @@
       });
   }
 
-  /* ---------------- 项目协作人（只读共享：甲方培训负责人 / 业务领导） ----------------
+  /* ---------------- 超级管理员：管理员与工作空间 ----------------
+   * 一个应用一个超级管理员；超级管理员可以把某个邮箱开成管理员。
+   * 每位管理员有独立工作空间（读策略按 owner / 成员判定），互相看不到数据。
+   * ------------------------------------------------------------- */
+  function listAdmins() {
+    return getCloud().database.rpc('admin_list')
+      .then(function (r) {
+        if (r.error) throw r.error;
+        if (r.data && r.data.ok === false) throw new Error(r.data.error || '读取失败');
+        return (r.data && r.data.admins) || [];
+      });
+  }
+  function grantAdmin(email, name) {
+    return getCloud().database.rpc('admin_grant', { p_email: email, p_name: name || '' })
+      .then(function (r) {
+        if (r.error) throw r.error;
+        return r.data || { ok: false, error: '添加失败' };
+      });
+  }
+  function setAdminStatus(email, status) {
+    return getCloud().database.rpc('admin_set_status', { p_email: email, p_status: status })
+      .then(function (r) {
+        if (r.error) throw r.error;
+        return r.data || { ok: false, error: '操作失败' };
+      });
+  }
+
+  /* ---------------- 项目协作人（只读共享：甲方培训负责人） ----------------
    * 协作人绑定在「项目」上：同一个课程的不同期次，可以邀请不同的人。
    * 他们凭自己的邮箱登录，能看到本项目所在的课程、本项目迁移表、学员填写、反馈、报表。
    * 写入权限仍在 owner 手上（数据库 RLS 已限制），协作人只能批注。
@@ -438,6 +465,7 @@
     appendTemplates: appendTemplates, saveTemplates: saveTemplates,
     updateTemplate: updateTemplate, removeTemplate: removeTemplate,
     whoami: whoami, transferAdmin: transferAdmin,
+    listAdmins: listAdmins, grantAdmin: grantAdmin, setAdminStatus: setAdminStatus,
     listCollaborators: listCollaborators, addCollaborator: addCollaborator, removeCollaborator: removeCollaborator,
     saveProjectRows: saveProjectRows,
     listComments: listComments, listOpenComments: listOpenComments, addComment: addComment,

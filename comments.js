@@ -1,6 +1,6 @@
 /* ============================================================
  * Action Leap V3 · 协作批注模块（ALCM）
- * 协作人（培训负责人 / 业务领导）只读，但可在任意位置留建议；
+ * 协作人（培训负责人）只读，但可在任意位置留建议；
  * Owner（讲师）看到未处理数量，可就地标记已处理。
  *
  * 用法：
@@ -188,7 +188,7 @@
   function inboxHTML() {
     var open = all.filter(function (c) { return c.status === 'open'; });
     if (!open.length) {
-      return '<div class="cmt-none">还没有未处理的协作建议。培训负责人 / 业务领导登录后，可在任意位置留建议。</div>';
+      return '<div class="cmt-none">还没有未处理的协作建议。培训负责人登录后，可在任意位置留建议。</div>';
     }
     open.sort(function (a, b) { return (b.created_at || '').localeCompare(a.created_at || ''); });
     return open.map(function (c) {

@@ -52,27 +52,44 @@
     </div>
 
     <div class="ro-banner hidden" id="noAdminBanner">
-      你的账号不是这个应用的管理员，只能看被邀请为协作人的内容（只读）
-      <span class="meta">管理员邮箱只有一个。你可以查看课程与项目、在任意位置留建议；建课程、建项目、做评价只有管理员能做。</span>
+      你的账号还不是这个应用的管理员，目前只能看被邀请为协作人的内容（只读）
+      <span class="meta">想自己建课程、派发项目？把这个邮箱告诉应用主人，请他把你添加为管理员；开通后你会有一块独立的工作空间。</span>
     </div>
 
-    <div class="card hidden" id="adminCard" style="margin-bottom:14px">
-      <div style="display:flex;align-items:center;gap:10px">
-        <div class="eyebrow" style="margin:0">管理员（本应用只有一个）</div>
-        <div class="spacer"></div>
-        <button class="btn ghost sm" id="btnTransferToggle">移交管理权限</button>
-      </div>
-      <p class="meta">当前管理员：<b id="adminEmailShow">—</b>。只有管理员能建课程、派发项目、做评价与导出报表；其他人即便拿到应用地址并成功登录，也只有被邀请后的只读权限。</p>
-      <div id="transferPanel" class="hidden" style="margin-top:10px;padding:12px;border:1px dashed var(--line);border-radius:10px">
-        <label>新管理员邮箱</label>
-        <input type="email" id="newAdminEmail" placeholder="new-admin@company.com" />
-        <p class="meta">对方必须先用这个邮箱收验证码登录过一次本应用（首次登录会提示无管理权限），系统才认得出这个账号。移交后：全部课程与项目转给他，你的账号降为普通协作人。</p>
-        <div style="margin-top:10px;display:flex;gap:8px"><button class="btn sm" id="btnTransfer">确认移交</button><button class="btn ghost sm" id="btnTransferCancel">取消</button></div>
-      </div>
-      <div id="adminErr" class="error"></div>
-    </div>
     <div id="courseList" class="grid cols-2"></div>
     <div id="courseEmpty" class="empty hidden">还没有课程。点「新建课程」定义你的第一张通用迁移表。</div>
+
+    <div class="card hidden" id="adminCard" style="margin-top:18px">
+      <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+        <div class="eyebrow" style="margin:0">管理员与工作空间 · 超级管理员</div>
+        <div class="spacer"></div>
+        <span class="meta" id="adminSummary"></span>
+        <button class="btn ghost sm" id="btnAdminToggle">管理</button>
+      </div>
+      <div class="hidden" id="adminBody" style="margin-top:10px">
+        <p class="meta">这个应用只有你能给别人开管理员权限。<b>每位管理员有独立的工作空间</b>——只看到自己建的课程与项目，学员、上司、反馈、报表互相不可见；你能看到全部，方便支持与演示。</p>
+        <p class="meta">邀请客户的正确顺序：请对方先用自己邮箱收验证码登录一次（首次会显示"还不是管理员"），再回来把他的邮箱加到下面。</p>
+        <div class="row2">
+          <div><label>姓名（可选）</label><input type="text" id="grantName" placeholder="如：王老师" /></div>
+          <div><label>邮箱</label><input type="email" id="grantEmail" placeholder="trainer@company.com" /></div>
+        </div>
+        <div style="margin-top:10px;display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+          <button class="btn sm" id="btnGrantAdmin">添加为管理员</button>
+          <span class="meta" id="grantHint"></span>
+        </div>
+        <div id="adminList" style="margin-top:12px"></div>
+        <div id="adminErr" class="error"></div>
+        <div style="margin-top:14px">
+          <button class="btn ghost sm" id="btnTransferToggle">把超级管理员身份移交给别人</button>
+        </div>
+        <div id="transferPanel" class="hidden" style="margin-top:10px;padding:12px;border:1px dashed var(--line);border-radius:10px">
+          <label>新的超级管理员邮箱</label>
+          <input type="email" id="newAdminEmail" placeholder="new-super@company.com" />
+          <p class="meta">这是<b>换人</b>，不是加人：全部课程、项目、提交记录会转到这个账号名下，你的账号保留管理员身份但不再是超级管理员。日常给客户开权限请用上面的「添加为管理员」。</p>
+          <div style="margin-top:10px;display:flex;gap:8px"><button class="btn sm" id="btnTransfer">确认移交</button><button class="btn ghost sm" id="btnTransferCancel">取消</button></div>
+        </div>
+      </div>
+    </div>
   </section>
 
   <!-- 课程详情 + 一表编辑 -->
@@ -144,7 +161,7 @@
 
     <div class="card" id="inboxCard">
       <div class="eyebrow">协作建议收件箱</div>
-      <p class="meta">培训负责人 / 业务领导在课程、项目、学员成果旁边留的建议，都会汇到这里。处理完点「标记已处理」。</p>
+      <p class="meta">培训负责人在课程、项目、学员成果旁边留的建议，都会汇到这里。处理完点「标记已处理」。</p>
       <div id="cmtInbox"></div>
     </div>
 
@@ -237,11 +254,11 @@
 
     <div class="card" id="collabCard" style="margin-top:16px">
       <div style="display:flex;align-items:center;gap:10px">
-        <div class="eyebrow" style="margin:0">本项目的协作人（甲方培训负责人 / 业务领导 · 只读）</div>
+        <div class="eyebrow" style="margin:0">本项目的协作人（甲方培训负责人 · 只读）</div>
         <div class="spacer"></div>
         <button class="cmt-btn" data-cmt-kind="collab" data-cmt-ref="all" data-cmt-label="协作人设置"></button>
       </div>
-      <p class="meta">只对本项目生效。加上邮箱后，他们用自己的邮箱验证码登录，就能看到这门课程与本项目的迁移表、学员填写、上司反馈与报表；不能修改，但可以在任意位置点「建议」，你在「协作建议」里处理。</p>
+      <p class="meta">只对本项目生效。加上邮箱后，他们用自己的邮箱验证码登录，就能看到这门课程与本项目的迁移表、学员填写、上司反馈与报表；不能修改，但可以在任意位置点「建议」，你在「协作建议」里处理。<b>业务领导不必单设角色</b>——他通常就是某位学员的直接上司，把上司链接发给他，他就能看到自己下属的成果并写反馈。</p>
       <div class="row2">
         <div><label>姓名（可选）</label><input type="text" id="colName" placeholder="如：李经理" /></div>
         <div><label>邮箱</label><input type="email" id="colEmail" placeholder="hr@company.com" /></div>
@@ -268,9 +285,9 @@
 <div class="toast" id="toast"></div>
 
 <script src="https://cdn.jsdelivr.net/npm/@tencent-ai/workbuddy-cloud-sdk@dev/lib/index.global.js"></script>
-<script src="publicConfig.js"></script>
-<script src="cloud-core.js"></script>
-<script src="comments.js"></script>
+<script src="publicConfig.js?v=17"></script>
+<script src="cloud-core.js?v=17"></script>
+<script src="comments.js?v=17"></script>
 <script>
 (function () {
   'use strict';
@@ -285,7 +302,7 @@
   var BASE = location.origin + location.pathname.replace(/[^/]*$/, '');
   var state = { course: null, projectId: null, rows: [], pfw: [], collab: [], roster: [],
     editingTpl: null,
-    schedule: null, me: { uid: '', email: '' }, isOwner: true, isAdmin: false };
+    schedule: null, me: { uid: '', email: '' }, isOwner: true, isAdmin: false, isSuper: false };
 
   function $(id) { return document.getElementById(id); }
   function show(view) {
@@ -349,17 +366,72 @@
     });
   }
 
-  /* ---------------- 管理员闸门：一个应用只有一个管理员邮箱 ----------------
-   * 数据库层（is_app_admin）才是真闸门，这里只负责把状态摆到界面上：
-   * 非管理员看不到「新建课程」，进去的任何课程都是只读 + 可批注。
+  /* ---------------- 管理员闸门：超级管理员 + 多管理员工作空间 ----------------
+   * 数据库层才是真闸门：is_app_admin（能不能写）、is_super_admin（能不能开管理员）。
+   * 每位管理员的工作空间由 owner_id 天然隔离；超级管理员可见全部，便于支持与演示。
    * ------------------------------------------------------------------ */
   function applyAdminGate(me) {
     var isAdmin = !!(me && me.isAdmin);
-    state.isAdmin = isAdmin;
-    $('adminCard').classList.toggle('hidden', !isAdmin);
+    var isSuper = !!(me && me.isSuper);
+    state.isAdmin = isAdmin; state.isSuper = isSuper;
+    $('adminCard').classList.toggle('hidden', !isSuper);
     $('noAdminBanner').classList.toggle('hidden', isAdmin);
     $('btnNewCourse').classList.toggle('hidden', !isAdmin);
-    if (isAdmin && me && me.adminEmail) $('adminEmailShow').textContent = me.adminEmail;
+    if (isSuper) renderAdminList();
+  }
+
+  function renderAdminList() {
+    var box = $('adminList'); if (!box) return;
+    A.listAdmins().then(function (list) {
+      var active = list.filter(function (a) { return a.status === 'active'; }).length;
+      $('adminSummary').textContent = active + ' 位管理员' + (list.length > active ? '（' + (list.length - active) + ' 停用）' : '');
+      if (!list.length) { box.innerHTML = '<div class="meta">还没有管理员。</div>'; return; }
+      box.innerHTML = list.map(function (a) {
+        var sup = a.role === 'super';
+        return '<div class="collab-row">' +
+          '<span class="em">' + esc(a.name || a.email) + (sup ? ' <span class="pill">超级</span>' : '') + '</span>' +
+          '<span class="meta">' + esc(a.email) + '</span>' +
+          '<span class="meta">课程 ' + (a.courses || 0) + ' · 项目 ' + (a.projects || 0) + ' · 学员 ' + (a.students || 0) + '</span>' +
+          (a.status === 'disabled' ? '<span class="pill">已停用</span>' : '') +
+          '<div class="spacer"></div>' +
+          (sup ? '' : '<button class="btn ghost sm" data-admin-status="' + esc(a.email) + '" data-next="' +
+            (a.status === 'active' ? 'disabled' : 'active') + '">' +
+            (a.status === 'active' ? '停用' : '恢复') + '</button>') +
+          '</div>';
+      }).join('');
+      box.querySelectorAll('[data-admin-status]').forEach(function (b) {
+        b.addEventListener('click', function () {
+          var em = b.getAttribute('data-admin-status'), next = b.getAttribute('data-next');
+          if (next === 'disabled' && !confirm('停用 ' + em + '？\n\n他会立刻失去管理权限，但已建的课程与项目都保留，恢复后可继续用。')) return;
+          A.setAdminStatus(em, next).then(function (r) {
+            if (r && r.ok === false) { $('adminErr').textContent = r.error || '操作失败'; return; }
+            $('adminErr').textContent = '';
+            toast(next === 'active' ? '已恢复管理权限' : '已停用');
+            renderAdminList();
+          }).catch(function (e) { $('adminErr').textContent = '操作失败：' + (e.message || e); });
+        });
+      });
+    }).catch(function (e) { $('adminErr').textContent = '读取管理员失败：' + (e.message || e); });
+  }
+
+  if ($('btnAdminToggle')) {
+    $('btnAdminToggle').addEventListener('click', function () {
+      var body = $('adminBody'); body.classList.toggle('hidden');
+      this.textContent = body.classList.contains('hidden') ? '管理' : '收起';
+    });
+  }
+  if ($('btnGrantAdmin')) {
+    $('btnGrantAdmin').addEventListener('click', function () {
+      var em = $('grantEmail').value.trim(), nm = $('grantName').value.trim();
+      if (!em) { $('adminErr').textContent = '请输入邮箱'; return; }
+      $('adminErr').textContent = ''; $('grantHint').textContent = '正在添加…';
+      A.grantAdmin(em, nm).then(function (r) {
+        if (r && r.ok === false) { $('grantHint').textContent = ''; $('adminErr').textContent = r.error || '添加失败'; return; }
+        $('grantEmail').value = ''; $('grantName').value = '';
+        $('grantHint').textContent = '已开通：' + em + '　让他用自己的邮箱登录即可';
+        renderAdminList();
+      }).catch(function (e) { $('grantHint').textContent = ''; $('adminErr').textContent = '添加失败：' + (e.message || e); });
+    });
   }
   if ($('btnTransferToggle')) {
     $('btnTransferToggle').addEventListener('click', function () {
@@ -371,12 +443,12 @@
     });
     $('btnTransfer').addEventListener('click', function () {
       var em = $('newAdminEmail').value.trim();
-      if (!em) { $('adminErr').textContent = '请输入新管理员邮箱'; return; }
-      if (!confirm('把管理权限移交给 ' + em + '？\n\n所有课程、项目、提交记录会转到这个账号名下，你的账号将失去管理权限。')) return;
+      if (!em) { $('adminErr').textContent = '请输入新的超级管理员邮箱'; return; }
+      if (!confirm('把超级管理员身份移交给 ' + em + '？\n\n所有课程、项目、提交记录会转到这个账号名下，你的账号保留管理员身份但不再拥有超级权限。')) return;
       $('adminErr').textContent = '';
       A.transferAdmin(em).then(function (r) {
         if (r && r.ok === false) { $('adminErr').textContent = r.error || '移交失败'; return; }
-        toast('管理权限已移交给 ' + em);
+        toast('超级管理员已移交给 ' + em);
         setTimeout(function () { location.reload(); }, 1200);
       }).catch(function (e) { $('adminErr').textContent = '移交失败：' + (e.message || e); });
     });
@@ -404,7 +476,7 @@
       $('courseEmpty').classList.toggle('hidden', list.length > 0);
       $('courseEmpty').textContent = state.isAdmin
         ? '还没有课程。点「新建课程」定义你的第一张通用迁移表。'
-        : '你的账号不是管理员，目前也没有被邀请为协作人的课程。要让讲师把你加进某个项目的「协作人」，你才能看到那份内容。';
+        : '你的账号还不是管理员，目前也没有被邀请为协作人的课程。请让应用主人把你添加为管理员（你会得到一块独立的工作空间），或把你加进某个项目的「协作人」。';
       list.forEach(function (c) {
         var rows = (c.framework || []).length;
         var mine = isMine(c);
@@ -639,7 +711,7 @@
       return;
     }
     if (!list.length) {
-      box.innerHTML = '<div class="meta">本项目还没有协作人。加上甲方培训负责人 / 业务领导的邮箱，他们用自己的邮箱登录就能查看本项目。</div>';
+      box.innerHTML = '<div class="meta">本项目还没有协作人。加上甲方培训负责人的邮箱，他用自己的邮箱登录就能查看本项目。</div>';
       return;
     }
     box.innerHTML = list.map(function (x) {
