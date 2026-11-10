@@ -336,6 +336,18 @@
         return r.data || { ok: false, error: '操作失败' };
       });
   }
+  /* 数据移交：把一门课程（含其项目、学员名单与填写、上司反馈、讲师评价）
+   * 整体挂到另一位管理员名下。传 courseId = null 表示全部课程。
+   * 只换归属，不复制数据；移交后原主人不再看到它（超级管理员例外，他始终可见全部）。 */
+  function transferData(toEmail, courseId) {
+    return getCloud().database.rpc('transfer_data', {
+      p_to_email: toEmail,
+      p_course_id: (courseId == null || courseId === '') ? null : courseId
+    }).then(function (r) {
+      if (r.error) throw r.error;
+      return r.data || { ok: false, error: '移交失败' };
+    });
+  }
 
   /* ---------------- 项目协作人（只读共享：甲方培训负责人） ----------------
    * 协作人绑定在「项目」上：同一个课程的不同期次，可以邀请不同的人。
@@ -466,6 +478,7 @@
     updateTemplate: updateTemplate, removeTemplate: removeTemplate,
     whoami: whoami, transferAdmin: transferAdmin,
     listAdmins: listAdmins, grantAdmin: grantAdmin, setAdminStatus: setAdminStatus,
+    transferData: transferData,
     listCollaborators: listCollaborators, addCollaborator: addCollaborator, removeCollaborator: removeCollaborator,
     saveProjectRows: saveProjectRows,
     listComments: listComments, listOpenComments: listOpenComments, addComment: addComment,

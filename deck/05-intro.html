@@ -1,0 +1,490 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>Action Leap · 培训之后的三周</title>
+<style>
+/* ===========================================================
+   Action Leap — 甲方介绍（A4 竖版 7 页，自包含）
+   794×1123px = A4 210×297mm @96dpi
+   =========================================================== */
+:root{
+  --bg:#FBF3EA; --paper:#FFFDFA;
+  --ink:#241E1A; --ink2:#5C5148; --ink3:#93877C;
+  --line:#E9DED2; --line2:#E0D3C4;
+  --coral:#FF7A4D; --coral-d:#DE5B2E; --coral-s:#FFEDE3;
+  --indigo:#4F46E5; --indigo-s:#EEEDFD;
+  --font:-apple-system,BlinkMacSystemFont,"PingFang SC","Hiragino Sans GB","Microsoft YaHei","Noto Sans SC",sans-serif;
+}
+*{box-sizing:border-box;-webkit-print-color-adjust:exact;print-color-adjust:exact;}
+html,body{margin:0;padding:0;}
+body{background:#EFE5DA;font-family:var(--font);color:var(--ink);line-height:1.55;-webkit-font-smoothing:antialiased;}
+
+.page{
+  position:relative;width:794px;height:1123px;margin:26px auto;
+  background:var(--bg);border-radius:26px;box-shadow:0 14px 40px rgba(90,60,40,.13);
+  padding:78px 76px 62px;display:flex;flex-direction:column;overflow:hidden;
+}
+.pn{position:absolute;right:76px;bottom:42px;font-size:10.5px;font-weight:800;color:var(--ink3);letter-spacing:.16em;}
+
+/* ---------- 标题 ---------- */
+.kick{
+  display:flex;align-items:center;gap:10px;
+  font-size:10.5px;font-weight:800;letter-spacing:.22em;text-transform:uppercase;
+  color:var(--coral-d);margin:0 0 18px;
+}
+.kick i{width:20px;height:2px;background:var(--coral);display:inline-block;flex:0 0 auto;}
+h2{font-size:31px;line-height:1.32;font-weight:800;letter-spacing:-.022em;margin:0 0 14px;}
+h2 em{font-style:normal;color:var(--coral-d);}
+.deck{font-size:14.5px;color:var(--ink2);line-height:1.75;margin:0;max-width:600px;}
+.deck b{color:var(--ink);font-weight:700;}
+
+/* ---------- 封面 ---------- */
+.cover{
+  background:
+    radial-gradient(640px 420px at 92% -8%, rgba(255,122,77,.20), transparent 62%),
+    radial-gradient(560px 420px at -14% 106%, rgba(79,70,229,.12), transparent 66%),
+    var(--bg);
+  justify-content:space-between;
+}
+.mark{display:flex;align-items:center;gap:11px;font-size:15px;font-weight:800;letter-spacing:.01em;}
+.mark i{width:12px;height:12px;border-radius:4px;background:var(--coral);transform:rotate(10deg);display:inline-block;}
+.cover .mid{margin:auto 0;padding-bottom:74px;}
+.cover h1{font-size:45px;line-height:1.2;font-weight:800;letter-spacing:-.03em;margin:0 0 26px;}
+.cover h1 em{font-style:normal;color:var(--coral-d);}
+.cover .sub{font-size:17px;color:var(--ink2);line-height:1.75;max-width:590px;margin:0;}
+.chips{display:flex;gap:9px;flex-wrap:wrap;margin-bottom:26px;}
+.chip{font-size:12.5px;font-weight:700;color:var(--indigo);background:var(--indigo-s);padding:7px 14px;border-radius:999px;}
+.chip.w{color:var(--coral-d);background:var(--coral-s);}
+.cover .foot{border-top:1px solid var(--line);padding-top:18px;font-size:12px;color:var(--ink3);letter-spacing:.02em;}
+
+/* ---------- 场景时间线 ---------- */
+.tl{margin-top:34px;}
+.ev{display:grid;grid-template-columns:118px 1fr;gap:26px;padding:26px 0;border-top:1px solid var(--line);}
+.ev:last-child{border-bottom:1px solid var(--line);}
+.ev .when{font-size:12px;font-weight:800;color:var(--coral-d);letter-spacing:.03em;padding-top:4px;}
+.ev .h{font-size:17.5px;font-weight:800;letter-spacing:-.012em;margin:0 0 7px;line-height:1.4;}
+.ev .p{font-size:13.6px;color:var(--ink2);line-height:1.75;margin:0;}
+.punch{
+  margin-top:auto;border-top:1px solid var(--line);padding-top:26px;
+  font-size:21px;line-height:1.62;font-weight:800;letter-spacing:-.015em;
+}
+.punch em{font-style:normal;color:var(--coral-d);}
+
+/* ---------- 做法 ---------- */
+.mrows{margin-top:26px;}
+.mrow{display:grid;grid-template-columns:30px 78px 1fr 96px;gap:16px;padding:26px 0;border-top:1px solid var(--line);}
+.mrow:last-child{border-bottom:1px solid var(--line);}
+.mrow .n{font-size:11px;font-weight:800;color:var(--ink3);letter-spacing:.09em;padding-top:5px;}
+.mrow .who{justify-self:start;align-self:start;font-size:11.5px;font-weight:800;color:var(--indigo);background:var(--indigo-s);border-radius:7px;padding:3px 9px;margin-top:2px;white-space:nowrap;}
+.mrow .h{font-size:16.5px;font-weight:800;margin:0 0 5px;letter-spacing:-.01em;}
+.mrow .p{font-size:13.4px;color:var(--ink2);line-height:1.72;margin:0;}
+.mrow .tm{justify-self:end;text-align:right;font-size:11px;font-weight:700;color:var(--ink3);line-height:1.6;padding-top:5px;}
+.aside{margin-top:auto;padding-left:16px;border-left:3px solid var(--coral);font-size:14.5px;color:var(--ink2);line-height:1.75;font-weight:600;}
+.aside b{color:var(--ink);}
+
+/* ---------- 四周节奏 ---------- */
+.split{display:grid;grid-template-columns:1fr 262px;gap:44px;margin-top:28px;align-items:start;}
+.wkrows{}
+.wkrow{display:grid;grid-template-columns:40px 1fr;gap:14px;padding:18px 0;border-top:1px solid var(--line);}
+.wkrow:last-child{border-bottom:1px solid var(--line);}
+.wkrow .wn{font-size:11.5px;font-weight:800;letter-spacing:.12em;color:var(--coral-d);padding-top:4px;}
+.wkrow .wt{font-size:15.5px;font-weight:800;letter-spacing:-.01em;margin:0 0 5px;display:flex;align-items:center;gap:9px;}
+.who2{font-size:10.5px;font-weight:800;color:var(--indigo);background:var(--indigo-s);border-radius:6px;padding:2px 8px;letter-spacing:.02em;}
+.wkrow .wd{font-size:12.6px;color:var(--ink2);line-height:1.7;}
+
+/* 学员端示意 */
+.phone{background:#fff;border:1px solid var(--line);border-radius:26px;padding:16px 15px 14px;box-shadow:0 14px 34px rgba(90,60,40,.11);}
+.ph-head{display:flex;align-items:center;justify-content:space-between;font-size:10.5px;font-weight:800;color:var(--ink3);letter-spacing:.04em;padding:0 3px 12px;}
+.ph-badge{background:var(--coral-s);color:var(--coral-d);border-radius:999px;padding:2px 8px;font-size:10px;}
+.ph-card{background:var(--bg);border-radius:16px;padding:14px 13px 13px;}
+.ph-k{font-size:9.5px;font-weight:800;letter-spacing:.14em;color:var(--ink3);margin:10px 0 4px;}
+.ph-k:first-child{margin-top:0;}
+.ph-a{font-size:12.5px;font-weight:800;line-height:1.55;color:var(--ink);}
+.ph-box{background:#fff;border:1px solid var(--line);border-radius:9px;padding:8px 10px;font-size:11.5px;color:var(--ink2);line-height:1.55;}
+.ph-box.num{font-size:17px;font-weight:800;color:var(--coral-d);letter-spacing:-.02em;}
+.ph-box.num span{font-size:10.5px;font-weight:800;margin-left:2px;}
+.ph-btn{margin-top:12px;background:var(--coral);color:#fff;text-align:center;border-radius:10px;padding:9px 0;font-size:12px;font-weight:800;letter-spacing:.02em;}
+.ph-foot{text-align:center;font-size:10px;color:var(--ink3);margin-top:10px;letter-spacing:.04em;}
+.cost{display:grid;grid-template-columns:repeat(3,1fr);gap:26px;margin-top:34px;padding-top:26px;border-top:1px solid var(--line);}
+.cost .v{font-size:34px;font-weight:800;letter-spacing:-.035em;color:var(--coral-d);line-height:1.02;}
+.cost .v small{font-size:13.5px;font-weight:800;margin-left:3px;letter-spacing:0;}
+.cost .l{font-size:12.2px;color:var(--ink2);margin-top:7px;line-height:1.55;}
+
+/* ---------- 对比 ---------- */
+.cmp{width:100%;border-collapse:collapse;margin-top:24px;}
+.cmp th{
+  text-align:left;font-size:10px;font-weight:800;letter-spacing:.16em;text-transform:uppercase;
+  color:var(--ink3);padding:0 14px 13px;vertical-align:bottom;
+}
+.cmp th.dimcol{color:var(--ink3);}
+.cmp th.me{color:var(--coral-d);}
+.cmp th:first-child{padding-left:0;}
+.cmp td{
+  padding:21px 14px;border-top:1px solid var(--line);vertical-align:top;
+  font-size:12.8px;line-height:1.66;color:var(--ink3);
+}
+.cmp td:first-child{padding-left:0;font-size:12.2px;font-weight:800;color:var(--ink);letter-spacing:.02em;white-space:nowrap;}
+.cmp td.me{color:var(--ink);font-weight:700;background:rgba(255,253,250,.92);}
+.cmp tr:last-child td{border-bottom:1px solid var(--line);}
+.cmp th.me{border-top-left-radius:12px;border-top-right-radius:12px;background:rgba(255,253,250,.92);}
+.cmp tr:last-child td.me{border-bottom-left-radius:12px;border-bottom-right-radius:12px;}
+
+/* ---------- 产出 ---------- */
+.trio{display:grid;grid-template-columns:repeat(3,1fr);gap:26px;margin-top:26px;}
+.trio .v{font-size:38px;font-weight:800;color:var(--coral-d);letter-spacing:-.04em;line-height:1;}
+.trio .v small{font-size:13px;font-weight:800;margin-left:4px;letter-spacing:0;}
+.trio .l{font-size:12px;color:var(--ink2);margin-top:9px;line-height:1.55;}
+.gains{margin-top:30px;}
+.g{display:grid;grid-template-columns:30px 1fr;gap:14px;padding:20px 0;border-top:1px solid var(--line);}
+.g:last-child{border-bottom:1px solid var(--line);}
+.g .n{font-size:10.5px;font-weight:800;color:var(--coral-d);letter-spacing:.1em;padding-top:4px;}
+.g .t{font-size:14.8px;font-weight:800;margin:0 0 3px;letter-spacing:-.01em;}
+.g .d{font-size:12.6px;color:var(--ink2);line-height:1.66;margin:0;}
+.q{margin-top:auto;font-size:18px;font-weight:800;line-height:1.65;padding-left:17px;border-left:3px solid var(--coral);}
+.q em{font-style:normal;color:var(--coral-d);}
+
+/* ---------- 二维码 ---------- */
+.qrwrap{display:grid;grid-template-columns:300px 1fr;gap:40px;align-items:center;margin-top:44px;}
+.qcard{background:#fff;border:1px solid var(--line);border-radius:24px;padding:19px;box-shadow:0 12px 30px rgba(90,60,40,.10);}
+.qcard svg{display:block;width:100%;height:auto;border-radius:6px;}
+.inside{display:grid;grid-template-columns:repeat(3,1fr);gap:22px;margin-top:44px;padding-top:24px;border-top:1px solid var(--line);}
+.inside .v{font-size:22px;font-weight:800;color:var(--ink);letter-spacing:-.02em;}
+.inside .l{font-size:12.2px;color:var(--ink2);margin-top:6px;line-height:1.6;}
+.steps{}
+.st{display:grid;grid-template-columns:22px 1fr;gap:12px;padding:14px 0;border-top:1px solid var(--line);font-size:13px;color:var(--ink2);line-height:1.62;}
+.st:last-of-type{border-bottom:1px solid var(--line);}
+.st .k{font-size:11px;font-weight:800;color:var(--coral-d);padding-top:3px;}
+.st b{color:var(--ink);font-weight:800;}
+.url{margin-top:18px;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:10.5px;color:var(--ink3);word-break:break-all;line-height:1.7;letter-spacing:-.01em;}
+.qfoot{margin-top:auto;padding-top:22px;border-top:1px solid var(--line);font-size:12.5px;color:var(--ink2);line-height:1.7;}
+.qfoot b{color:var(--ink);}
+.cta{margin-top:auto;background:var(--paper);border:1px solid var(--line);border-radius:20px;padding:26px 28px;}
+.cta-e{font-size:9.5px;font-weight:800;letter-spacing:.22em;color:var(--coral-d);text-transform:uppercase;margin-bottom:11px;}
+.cta-t{font-size:20px;font-weight:800;letter-spacing:-.018em;margin-bottom:9px;line-height:1.4;}
+.cta-d{font-size:12.6px;color:var(--ink2);line-height:1.78;}
+.cta-d b{color:var(--ink);font-weight:800;}
+
+/* 三个只有我们这样的设计 */
+.diffs{display:grid;grid-template-columns:repeat(3,1fr);gap:26px;margin-top:40px;padding-top:26px;border-top:1px solid var(--line);}
+.diffs .dn{font-size:10px;font-weight:800;letter-spacing:.14em;color:var(--coral-d);margin-bottom:9px;}
+.diffs .dt{font-size:14px;font-weight:800;letter-spacing:-.01em;margin-bottom:6px;line-height:1.4;}
+.diffs .dd{font-size:12.2px;color:var(--ink2);line-height:1.7;}
+
+@media print{
+  @page{size:A4 portrait;margin:0;}
+  body{background:#fff;}
+  .page{
+    width:210mm;height:297mm;margin:0;border-radius:0;box-shadow:none;
+    padding:20mm 19mm 16mm;break-after:page;page-break-after:always;
+  }
+  .page:last-child{break-after:auto;page-break-after:auto;}
+  .pn{right:19mm;bottom:11mm;}
+}
+</style>
+</head>
+<body>
+
+<!-- ============ 01 封面 ============ -->
+<div class="page cover">
+  <div class="mark"><i></i>Action Leap</div>
+  <div class="mid">
+    <div class="kick"><i></i>课后行动迁移系统 · 企业培训的最后一公里</div>
+    <h1>培训的钱，<br>多半花在<em>没人接手的三周</em></h1>
+    <p class="sub">课程结束那一刻，学习才刚刚开始。我们把课后那三周接过来：把课上讲的方法变成岗位上的几个动作，让上司确认，让结果留下数字，最后变成一页能上会的报告。</p>
+  </div>
+  <div>
+    <div class="chips">
+      <span class="chip">不替代你的课程</span>
+      <span class="chip">不是学习平台</span>
+      <span class="chip w">学员不装 App</span>
+      <span class="chip w">每人每周 3 分钟</span>
+      <span class="chip w">四周出结果</span>
+    </div>
+    <div class="foot">讲师建母版 · 客户开项目 · 学员填结果 · 上司给反馈 · 系统出报告</div>
+  </div>
+  <div class="pn">01 / 07</div>
+</div>
+
+<!-- ============ 02 场景 ============ -->
+<div class="page">
+  <div class="kick"><i></i>01 · 你可能见过的四周</div>
+  <h2>课很成功，<em>然后就没有然后了</em></h2>
+  <p class="deck">这不是课程质量问题，也不是学员不认真。下面四个片段，几乎每一场企业培训之后都会重演一遍。</p>
+
+  <div class="tl">
+    <div class="ev">
+      <div class="when">课后第 1 天</div>
+      <div>
+        <div class="h">学员回到工位，笔记本进了抽屉</div>
+        <div class="p">群里发一份课后问卷，回收三成，答案整齐地写着「收获很大」。谁真的打算改点什么，没有人知道。</div>
+      </div>
+    </div>
+    <div class="ev">
+      <div class="when">课后第 2 周</div>
+      <div>
+        <div class="h">上司知道自己的人去上了课，但不知道课上讲了什么</div>
+        <div class="p">他没法问「你准备回来改哪件事」，只能说一句「好好用」。辅导没抓手，反馈只能停在感觉层面。</div>
+      </div>
+    </div>
+    <div class="ev">
+      <div class="when">课后第 4 周</div>
+      <div>
+        <div class="h">要汇报了，手上只有签到表、满意度和合影</div>
+        <div class="p">老板问一句「业务上有什么变化」，你答不上来。不是没发生，是没人把它记下来。</div>
+      </div>
+    </div>
+    <div class="ev">
+      <div class="when">下一期开班</div>
+      <div>
+        <div class="h">上一期谁做得最好、怎么做的，已经没人记得</div>
+        <div class="p">同样的课、同样的坑，从头再来一遍。培训花掉的钱是消耗品，它本来可以变成资产。</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="punch">问题不在课程，也不在学员。<br>是课后那段路，<em>没有人接</em>。</div>
+  <div class="pn">02 / 07</div>
+</div>
+
+<!-- ============ 03 做法 ============ -->
+<div class="page">
+  <div class="kick"><i></i>02 · 我们的做法</div>
+  <h2>只在课后加一段<em>最短的路</em></h2>
+  <p class="deck">不加课程、不加考试、不加积分。四件事，各归各人，谁都只多做一点点。</p>
+
+  <div class="mrows">
+    <div class="mrow">
+      <div class="n">01</div>
+      <div class="who">讲师</div>
+      <div>
+        <div class="h">一张行动表</div>
+        <div class="p">把课上的方法翻译成岗位动作：在什么场景、做什么、改善哪个指标。一门课建一次，每个客户项目复用一份，客户要什么就改那一份。</div>
+      </div>
+      <div class="tm">建一次<br>全客户复用</div>
+    </div>
+    <div class="mrow">
+      <div class="n">02</div>
+      <div class="who">学员</div>
+      <div>
+        <div class="h">两个空格</div>
+        <div class="p">每条行动只补两栏：做成了什么、数字变了多少。点开链接就填，不注册、不装 App、没有第三个按钮要研究。</div>
+      </div>
+      <div class="tm">30 秒<br>填一条</div>
+    </div>
+    <div class="mrow">
+      <div class="n">03</div>
+      <div class="who">直接上司</div>
+      <div>
+        <div class="h">一条专属链接</div>
+        <div class="p">看到下属自己写下的行动，给三段反馈：总体评价、具体建议、下一步承诺。不用登录后台。</div>
+      </div>
+      <div class="tm">5 分钟<br>整个项目一次</div>
+    </div>
+    <div class="mrow">
+      <div class="n">04</div>
+      <div class="who">你</div>
+      <div>
+        <div class="h">一页纸</div>
+        <div class="p">完成度、指标前后、优秀做法自动成页，第四周就能直接拿去汇报或归档。不用自己拼表格。</div>
+      </div>
+      <div class="tm">自动生成<br>不用拼表</div>
+    </div>
+  </div>
+
+  <div class="aside">没有排行榜、没有打卡天数、没有第二套要学的新系统。<b>学员一天最多被打扰一次</b>，其余时间它不存在。</div>
+  <div class="pn">03 / 07</div>
+</div>
+
+<!-- ============ 04 节奏 ============ -->
+<div class="page">
+  <div class="kick"><i></i>03 · 四周怎么走</div>
+  <h2>一周只打扰一次，<em>每个人都知道自己那一步</em></h2>
+  <p class="deck">整期项目四个星期走完。同一时间每个人只有一件事要做，做完就退出。</p>
+
+  <div class="split">
+    <div class="wkrows">
+      <div class="wkrow">
+        <div class="wn">W1</div>
+        <div>
+          <div class="wt">定行动<span class="who2">学员</span></div>
+          <div class="wd">把课上的方法写成这周真要在岗位上做的两件事，附上现在的起点数字。</div>
+        </div>
+      </div>
+      <div class="wkrow">
+        <div class="wn">W2</div>
+        <div>
+          <div class="wt">确认方向<span class="who2">直接上司</span></div>
+          <div class="wd">看下属要做的事是不是最该做的，可以改，也可以加一句要求。</div>
+        </div>
+      </div>
+      <div class="wkrow">
+        <div class="wn">W3</div>
+        <div>
+          <div class="wt">交结果<span class="who2">学员</span></div>
+          <div class="wd">做了什么、数字变成多少。做不成也照实填，卡在哪比做成更值得看。</div>
+        </div>
+      </div>
+      <div class="wkrow">
+        <div class="wn">W4</div>
+        <div>
+          <div class="wt">评价与出报告<span class="who2">讲师</span></div>
+          <div class="wd">分级、逐条点评、挑出可复制的范例，生成一页纸成果报告。</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="phone">
+      <div class="ph-head"><span>第 3 周 · 交结果</span><span class="ph-badge">3 / 10</span></div>
+      <div class="ph-card">
+        <div class="ph-k">这条行动</div>
+        <div class="ph-a">把周会改成 15 分钟站会，只过三件事</div>
+        <div class="ph-k">做成了什么</div>
+        <div class="ph-box">连续两周执行，会议时长从 60 分钟压到 20 分钟</div>
+        <div class="ph-k">实际值</div>
+        <div class="ph-box num">20 <span>分钟</span></div>
+        <div class="ph-btn">提交这条</div>
+      </div>
+      <div class="ph-foot">不用登录 · 约 30 秒</div>
+    </div>
+  </div>
+
+  <div class="cost">
+    <div><div class="v">3<small>分钟</small></div><div class="l">学员每周投入，一次一条，手机上就做完</div></div>
+    <div><div class="v">5<small>分钟</small></div><div class="l">上司一次性反馈，整个项目只找他一次</div></div>
+    <div><div class="v">1<small>小时</small></div><div class="l">讲师在第四周集中评价，其余时间不用管</div></div>
+  </div>
+
+  <div class="punch">整件事的代价，是一个人一周 3 分钟。<br>换回来的，是<em>看得见、说得清、留得下</em>的结果。</div>
+  <div class="pn">04 / 07</div>
+</div>
+
+<!-- ============ 05 差异 ============ -->
+<div class="page">
+  <div class="kick"><i></i>04 · 差在哪</div>
+  <h2>它不像「课后跟进」，<em>也不像学习平台</em></h2>
+  <p class="deck">判断标准很简单：<b>培训结束那天之后，桌上多没多出一份能拿给老板看的东西。</b></p>
+
+  <table class="cmp">
+    <thead>
+      <tr>
+        <th></th>
+        <th class="dimcol">常见做法 · 问卷加作业</th>
+        <th class="dimcol">学习平台 · 视频与积分</th>
+        <th class="me">Action Leap</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>学员负担</td>
+        <td>又一套系统，注册、打卡、催三次</td>
+        <td>看视频、攒积分、比排名</td>
+        <td class="me">一条链接，30 秒填一条</td>
+      </tr>
+      <tr>
+        <td>上司参与</td>
+        <td>不知情，问卷发给他也不填</td>
+        <td>看不到，平台数据与辅导无关</td>
+        <td class="me">三段反馈，5 分钟，一条链接</td>
+      </tr>
+      <tr>
+        <td>结束时的产物</td>
+        <td>满意度分数和签到表</td>
+        <td>学习时长与完课率</td>
+        <td class="me">带数字的结果、一页纸报告</td>
+      </tr>
+      <tr>
+        <td>谁来推动</td>
+        <td>你挨个催，催到第三轮就没人回</td>
+        <td>平台自动提醒，学员照样不看</td>
+        <td class="me">学员与上司各一条链接，本周做完即退出</td>
+      </tr>
+      <tr>
+        <td>留下的东西</td>
+        <td>一场活动记录</td>
+        <td>平台里的一段数据</td>
+        <td class="me">可复用的组织资产，越用越厚</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="diffs">
+    <div><div class="dn">01</div><div class="dt">上司被设计进来</div><div class="dd">不是旁观者，是第二周必须出手的一环——因为反馈决定下一步做什么。</div></div>
+    <div><div class="dn">02</div><div class="dt">学员不用第二个 App</div><div class="dd">没有账号、没有密码、没有学习时长要去刷，做完就退出。</div></div>
+    <div><div class="dn">03</div><div class="dt">产物直接是汇报材料</div><div class="dd">关掉系统那一刻，一页纸已经生成，不用再拼一次表。</div></div>
+  </div>
+
+  <div class="aside">课程是你的，讲师是你的，方法论也是你的。<b>我们只负责课后那一段</b>——把方法接到岗位上，再把结果接回来。</div>
+  <div class="pn">05 / 07</div>
+</div>
+
+<!-- ============ 06 产出 ============ -->
+<div class="page">
+  <div class="kick"><i></i>05 · 你会拿到什么</div>
+  <h2>一场培训结束时，<br>你手上有<em>五样东西</em></h2>
+
+  <div class="trio">
+    <div><div class="v">0<small>次</small></div><div class="l">不用安装 App，不用注册</div></div>
+    <div><div class="v">3<small>分钟</small></div><div class="l">一个人一周的全部投入</div></div>
+    <div><div class="v">1<small>页</small></div><div class="l">可以直接上会的成果报告</div></div>
+  </div>
+
+  <div class="gains">
+    <div class="g">
+      <div class="n">01</div>
+      <div><div class="t">完成情况，谁做了、谁卡住</div><div class="d">不是百分比，是名字和那一条具体行动。</div></div>
+    </div>
+    <div class="g">
+      <div class="n">02</div>
+      <div><div class="t">指标前后对比</div><div class="d">每条行动对应哪个指标、从多少变到多少，都留在表里。</div></div>
+    </div>
+    <div class="g">
+      <div class="n">03</div>
+      <div><div class="t">可复制的优秀做法</div><div class="d">被上司和讲师确认过的具体动作，不是励志故事。</div></div>
+    </div>
+    <div class="g">
+      <div class="n">04</div>
+      <div><div class="t">一页纸成果报告</div><div class="d">发给业务负责人，或直接放进年度培训总结。</div></div>
+    </div>
+    <div class="g">
+      <div class="n">05</div>
+      <div><div class="t">可复用的课程母版</div><div class="d">这一期跑出来的东西沉进母版，下一期从更高的起点开始。</div></div>
+    </div>
+  </div>
+
+  <div class="q">培训从<em>「花了多少钱」</em>，<br>变成<em>「换回了什么」</em>。</div>
+  <div class="pn">06 / 07</div>
+</div>
+
+<!-- ============ 07 上手 ============ -->
+<div class="page">
+  <div class="kick"><i></i>06 · 现在就能看</div>
+  <h2>扫一下，<em>里面已经有东西可点</em></h2>
+  <p class="deck">不用申请试用、不用留电话。系统里放了一套示范课程和示例数据，看得见的操作都在里面。</p>
+
+  <div class="qrwrap">
+    <div class="qcard"><svg role="img" aria-label="扫码进入 Action Leap" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 41 41" class="segno"><path fill="#fff" d="M0 0h41v41h-41z"/><path class="qrline" stroke="#241e1a" d="M2 2.5h7m1 0h1m1 0h3m8 0h1m3 0h1m1 0h2m1 0h7m-37 1h1m5 0h1m1 0h1m2 0h1m1 0h1m3 0h2m11 0h1m5 0h1m-37 1h1m1 0h3m1 0h1m2 0h1m2 0h1m1 0h1m1 0h1m2 0h1m2 0h4m1 0h2m1 0h1m1 0h3m1 0h1m-37 1h1m1 0h3m1 0h1m1 0h1m2 0h2m3 0h2m4 0h2m1 0h2m3 0h1m1 0h3m1 0h1m-37 1h1m1 0h3m1 0h1m2 0h2m2 0h2m4 0h1m2 0h1m1 0h1m1 0h3m1 0h1m1 0h3m1 0h1m-37 1h1m5 0h1m2 0h2m5 0h5m1 0h1m1 0h1m1 0h1m3 0h1m5 0h1m-37 1h7m1 0h1m1 0h1m1 0h1m1 0h1m1 0h1m1 0h1m1 0h1m1 0h1m1 0h1m1 0h1m1 0h1m1 0h7m-29 1h1m4 0h4m5 0h2m2 0h1m1 0h1m-29 1h1m1 0h2m1 0h3m1 0h1m1 0h2m5 0h2m2 0h1m1 0h5m1 0h1m2 0h1m1 0h2m-36 1h1m1 0h3m4 0h6m2 0h1m1 0h3m1 0h1m2 0h2m2 0h1m1 0h3m-36 1h1m2 0h1m2 0h3m3 0h1m1 0h1m1 0h5m2 0h2m4 0h1m2 0h1m-32 1h1m1 0h2m2 0h2m1 0h1m5 0h1m3 0h1m1 0h1m2 0h5m3 0h2m-35 1h4m2 0h6m2 0h2m1 0h1m1 0h2m3 0h3m2 0h2m1 0h5m-37 1h1m2 0h2m2 0h3m2 0h1m2 0h1m1 0h3m1 0h1m2 0h1m1 0h2m1 0h5m1 0h2m-36 1h3m2 0h2m3 0h1m1 0h1m2 0h1m2 0h1m1 0h1m3 0h2m1 0h2m2 0h1m1 0h2m-34 1h3m3 0h1m1 0h3m1 0h3m2 0h1m3 0h1m4 0h5m2 0h1m-36 1h1m1 0h1m1 0h1m1 0h7m4 0h1m4 0h1m2 0h5m3 0h3m-35 1h1m1 0h2m3 0h5m1 0h1m2 0h3m1 0h2m1 0h3m2 0h2m3 0h3m-33 1h1m1 0h1m1 0h1m2 0h4m3 0h1m1 0h1m1 0h3m2 0h2m1 0h3m2 0h2m-37 1h1m1 0h1m2 0h1m2 0h2m2 0h1m1 0h5m1 0h1m3 0h1m2 0h2m1 0h2m1 0h1m1 0h1m-35 1h1m1 0h1m1 0h4m4 0h3m1 0h1m1 0h1m1 0h1m1 0h1m2 0h1m1 0h2m1 0h3m2 0h1m-37 1h3m7 0h1m1 0h1m3 0h9m1 0h1m1 0h2m3 0h1m1 0h1m-36 1h1m1 0h1m3 0h2m3 0h1m1 0h1m2 0h1m1 0h1m4 0h4m1 0h1m1 0h2m-31 1h2m2 0h1m2 0h2m1 0h1m3 0h3m5 0h1m1 0h1m1 0h1m1 0h1m2 0h5m-32 1h5m1 0h3m1 0h2m2 0h1m1 0h1m2 0h1m1 0h1m2 0h2m1 0h1m1 0h2m-33 1h1m1 0h1m1 0h1m1 0h1m1 0h1m2 0h1m7 0h2m4 0h2m1 0h2m2 0h2m-36 1h1m1 0h2m1 0h2m1 0h2m6 0h2m2 0h1m3 0h1m3 0h1m2 0h1m2 0h1m-36 1h1m1 0h3m2 0h3m2 0h4m2 0h5m1 0h1m2 0h2m1 0h1m4 0h1m-34 1h1m1 0h1m1 0h1m2 0h1m1 0h1m1 0h2m1 0h1m1 0h9m1 0h5m1 0h1m1 0h1m-29 1h1m3 0h1m2 0h1m4 0h4m1 0h1m2 0h1m3 0h1m1 0h3m-37 1h7m1 0h4m2 0h3m1 0h1m3 0h1m1 0h2m2 0h1m1 0h1m1 0h1m1 0h1m1 0h1m-37 1h1m5 0h1m1 0h2m5 0h7m2 0h1m2 0h2m3 0h1m3 0h1m-37 1h1m1 0h3m1 0h1m2 0h1m1 0h1m1 0h4m2 0h2m7 0h6m1 0h2m-37 1h1m1 0h3m1 0h1m1 0h2m5 0h3m6 0h3m2 0h2m1 0h1m2 0h1m-36 1h1m1 0h3m1 0h1m1 0h1m1 0h3m2 0h1m1 0h1m3 0h3m4 0h3m1 0h2m1 0h1m-36 1h1m5 0h1m2 0h7m3 0h1m4 0h3m1 0h2m1 0h4m-35 1h7m1 0h1m2 0h2m1 0h1m2 0h1m2 0h1m1 0h1m2 0h2m2 0h1m2 0h5"/></svg></div>
+    <div class="steps">
+      <div class="st"><div class="k">01</div><div>扫码，或直接输入下面这行网址。</div></div>
+      <div class="st"><div class="k">02</div><div>用<b>自己的邮箱</b>收验证码登录，不需要密码。这里进来的是讲师与培训负责人的后台。</div></div>
+      <div class="st"><div class="k">03</div><div>打开示范课程：一张完整的行动表、两期在跑的项目，还有已经填过的学员结果与上司反馈。</div></div>
+      <div class="url">https://action-leap-v3.app.workbuddy.host/<br>?sharecode=GEGZJFD2S4</div>
+    </div>
+  </div>
+
+  <div class="inside">
+    <div><div class="v">一张表</div><div class="l">方法 → 场景 → 行动 → 指标，四栏说清一件事</div></div>
+    <div><div class="v">一条链接</div><div class="l">每个学员与上司各有专属入口，免登录</div></div>
+    <div><div class="v">一页纸</div><div class="l">第四周自动生成，可打印、可归档</div></div>
+  </div>
+
+  <div class="cta">
+    <div class="cta-e">下一步</div>
+    <div class="cta-t">想在自己的一门课上试一期？</div>
+    <div class="cta-d">照示范课程搭一遍，当天就能派发出第一个项目。<b>学员和直接上司不需要账号</b>——系统为每个人生成一条专属链接，发过去点开就填。这也是回收率能从三成变成九成的关键。</div>
+  </div>
+  <div class="pn">07 / 07</div>
+</div>
+
+</body>
+</html>

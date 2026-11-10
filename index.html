@@ -79,6 +79,22 @@
         </div>
         <div id="adminList" style="margin-top:12px"></div>
         <div id="adminErr" class="error"></div>
+
+        <div style="margin-top:16px;padding-top:14px;border-top:1px solid var(--line)">
+          <div style="display:flex;align-items:baseline;gap:10px;flex-wrap:wrap">
+            <b style="font-size:13px">数据移交</b>
+            <span class="meta">把一门课程连同它的项目、学员名单、学员填写、上司反馈、讲师评价，整体挂到另一位管理员名下。只换归属，不复制、不清空。</span>
+          </div>
+          <div class="row2" style="margin-top:10px">
+            <div><label>移交哪门课程</label><select id="trCourse"></select></div>
+            <div><label>交给哪位管理员</label><select id="trTarget"></select></div>
+          </div>
+          <div style="margin-top:10px;display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+            <button class="btn sm" id="btnTransferData">移交</button>
+            <span class="meta" id="trHint">对方要先用自己邮箱登录过一次，否则收不到。</span>
+          </div>
+        </div>
+
         <div style="margin-top:14px">
           <button class="btn ghost sm" id="btnTransferToggle">把超级管理员身份移交给别人</button>
         </div>
@@ -285,8 +301,8 @@
 <div class="toast" id="toast"></div>
 
 <script src="https://cdn.jsdelivr.net/npm/@tencent-ai/workbuddy-cloud-sdk@dev/lib/index.global.js"></script>
-<script src="publicConfig.js?v=17"></script>
-<script src="cloud-core.js?v=17"></script>
+<script src="publicConfig.js?v=18"></script>
+<script src="cloud-core.js?v=18"></script>
 <script src="comments.js?v=17"></script>
 <script>
 (function () {
@@ -382,36 +398,88 @@
 
   function renderAdminList() {
     var box = $('adminList'); if (!box) return;
-    A.listAdmins().then(function (list) {
+    Promise.all([
+      A.listAdmins(),
+      A.listCourses().catch(function () { return []; }),
+      A.listProjects().catch(function () { return []; })
+    ]).then(function (res) {
+      var list = res[0] || [], courses = res[1] || [], projects = res[2] || [];
+      state.adminList = list; state.allCourses = courses;
       var active = list.filter(function (a) { return a.status === 'active'; }).length;
       $('adminSummary').textContent = active + ' 位管理员' + (list.length > active ? '（' + (list.length - active) + ' 停用）' : '');
-      if (!list.length) { box.innerHTML = '<div class="meta">还没有管理员。</div>'; return; }
-      box.innerHTML = list.map(function (a) {
-        var sup = a.role === 'super';
-        return '<div class="collab-row">' +
-          '<span class="em">' + esc(a.name || a.email) + (sup ? ' <span class="pill">超级</span>' : '') + '</span>' +
-          '<span class="meta">' + esc(a.email) + '</span>' +
-          '<span class="meta">课程 ' + (a.courses || 0) + ' · 项目 ' + (a.projects || 0) + ' · 学员 ' + (a.students || 0) + '</span>' +
-          (a.status === 'disabled' ? '<span class="pill">已停用</span>' : '') +
-          '<div class="spacer"></div>' +
-          (sup ? '' : '<button class="btn ghost sm" data-admin-status="' + esc(a.email) + '" data-next="' +
-            (a.status === 'active' ? 'disabled' : 'active') + '">' +
-            (a.status === 'active' ? '停用' : '恢复') + '</button>') +
-          '</div>';
-      }).join('');
-      box.querySelectorAll('[data-admin-status]').forEach(function (b) {
-        b.addEventListener('click', function () {
-          var em = b.getAttribute('data-admin-status'), next = b.getAttribute('data-next');
-          if (next === 'disabled' && !confirm('停用 ' + em + '？\n\n他会立刻失去管理权限，但已建的课程与项目都保留，恢复后可继续用。')) return;
-          A.setAdminStatus(em, next).then(function (r) {
-            if (r && r.ok === false) { $('adminErr').textContent = r.error || '操作失败'; return; }
-            $('adminErr').textContent = '';
-            toast(next === 'active' ? '已恢复管理权限' : '已停用');
-            renderAdminList();
-          }).catch(function (e) { $('adminErr').textContent = '操作失败：' + (e.message || e); });
+      if (!list.length) { box.innerHTML = '<div class="meta">还没有管理员。</div>'; }
+      else {
+        box.innerHTML = list.map(function (a) {
+          var sup = a.role === 'super';
+          return '<div class="collab-row">' +
+            '<span class="em">' + esc(a.name || a.email) + (sup ? ' <span class="pill">超级</span>' : '') + '</span>' +
+            '<span class="meta">' + esc(a.email) + '</span>' +
+            '<span class="meta">课程 ' + (a.courses || 0) + ' · 项目 ' + (a.projects || 0) + ' · 学员 ' + (a.students || 0) + '</span>' +
+            (a.status === 'disabled' ? '<span class="pill">已停用</span>' : '') +
+            '<div class="spacer"></div>' +
+            (sup ? '' : '<button class="btn ghost sm" data-admin-status="' + esc(a.email) + '" data-next="' +
+              (a.status === 'active' ? 'disabled' : 'active') + '">' +
+              (a.status === 'active' ? '停用' : '恢复') + '</button>') +
+            '</div>';
+        }).join('');
+        box.querySelectorAll('[data-admin-status]').forEach(function (b) {
+          b.addEventListener('click', function () {
+            var em = b.getAttribute('data-admin-status'), next = b.getAttribute('data-next');
+            if (next === 'disabled' && !confirm('停用 ' + em + '？\n\n他会立刻失去管理权限，但已建的课程与项目都保留，恢复后可继续用。')) return;
+            A.setAdminStatus(em, next).then(function (r) {
+              if (r && r.ok === false) { $('adminErr').textContent = r.error || '操作失败'; return; }
+              $('adminErr').textContent = '';
+              toast(next === 'active' ? '已恢复管理权限' : '已停用');
+              renderAdminList();
+            }).catch(function (e) { $('adminErr').textContent = '操作失败：' + (e.message || e); });
+          });
         });
-      });
+      }
+      renderTransferSelectors(list, courses, projects);
     }).catch(function (e) { $('adminErr').textContent = '读取管理员失败：' + (e.message || e); });
+  }
+
+  /* 数据移交：把某门课程（含项目、学员、填写、反馈、评价）整体交给另一位管理员 */
+  function renderTransferSelectors(admins, courses, projects) {
+    var cs = $('trCourse'), ts = $('trTarget'); if (!cs || !ts) return;
+    var emailOf = {};
+    admins.forEach(function (a) { if (a.uid) emailOf[a.uid] = a.email; });
+    var projMap = {};
+    projects.forEach(function (p) { projMap[p.course_id] = (projMap[p.course_id] || 0) + 1; });
+    var prevC = cs.value, prevT = ts.value;
+    cs.innerHTML = '<option value="">全部课程（' + courses.length + ' 门）</option>' + courses.map(function (c) {
+      var owner = emailOf[c.owner_id] || '未登记账号';
+      return '<option value="' + c.id + '">' + esc(c.theme || '未命名课程') +
+        ' · ' + (projMap[c.id] || 0) + ' 期 · 现归 ' + esc(owner) + '</option>';
+    }).join('');
+    var pick = admins.filter(function (a) { return a.status === 'active'; });
+    ts.innerHTML = pick.map(function (a) {
+      return '<option value="' + esc(a.email) + '">' +
+        esc(a.name ? a.name + '（' + a.email + '）' : a.email) +
+        (a.role === 'super' ? ' · 超级管理员' : '') + '</option>';
+    }).join('') || '<option value="">暂无其他管理员</option>';
+    if (prevC) cs.value = prevC;
+    if (prevT) ts.value = prevT;
+    if (pick.length <= 1) $('trHint').textContent = '还没有别的管理员可接收，先用上面的「添加为管理员」开一个。';
+  }
+
+  if ($('btnTransferData')) {
+    $('btnTransferData').addEventListener('click', function () {
+      var cid = $('trCourse').value, em = $('trTarget').value;
+      if (!em) { $('adminErr').textContent = '请先选择接收的管理员'; return; }
+      if (em === (state.me && state.me.email)) { $('adminErr').textContent = '接收人就是你自己，换个账号'; return; }
+      var cname = cid ? ($('trCourse').selectedOptions[0].textContent.split(' · ')[0]) : '全部课程';
+      if (!confirm('把「' + cname + '」整体移交给 ' + em + '？\n\n项目、学员名单、学员填写、上司反馈、讲师评价会一起转到他名下；你的账号不再拥有它（你仍能在列表里看到它，因为你是超级管理员）。')) return;
+      $('adminErr').textContent = ''; $('trHint').textContent = '正在移交…';
+      A.transferData(em, cid).then(function (r) {
+        if (r && r.ok === false) { $('trHint').textContent = ''; $('adminErr').textContent = r.error || '移交失败'; return; }
+        var m = (r && r.moved) || {};
+        $('trHint').textContent = '已移交：课程 ' + (m.courses || 0) + ' · 项目 ' + (m.projects || 0) +
+          ' · 学员填写 ' + (m.submissions || 0) + ' 条。' + em + ' 登录后就能在自己的工作空间看到。';
+        toast('已移交给 ' + em);
+        renderAdminList(); loadCourses();
+      }).catch(function (e) { $('trHint').textContent = ''; $('adminErr').textContent = '移交失败：' + (e.message || e); });
+    });
   }
 
   if ($('btnAdminToggle')) {
