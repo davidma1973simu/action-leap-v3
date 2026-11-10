@@ -184,17 +184,19 @@
         <div><label>开始日期</label><input type="text" id="pStart" placeholder="2026-01-01" /></div>
         <div><label>截止日期</label><input type="text" id="pEnd" placeholder="2026-01-15" /></div>
       </div>
-      <div class="eyebrow" style="margin-top:16px">学员与上司名单</div>
-      <p class="meta">可逐条添加，也可「批量导入」20+ 人：粘贴文本 / 上传 CSV（每行「学员姓名, 上司姓名」）。系统自动生成令牌与免登录链接。</p>
+      <div class="eyebrow" style="margin-top:16px">学员名单（上司选填）</div>
+      <p class="meta">可逐条添加，也可「批量导入」20+ 人：粘贴文本 / 上传 CSV / 上传 Excel。只需学员姓名即可开跑；直接上司姓名留空不影响学员填写，以后想补再补。</p>
       <button class="btn ghost sm" id="btnBatchToggle">批量导入名单</button>
       <div id="batchPanel" class="hidden" style="margin:10px 0;padding:12px;border:1px dashed var(--line);border-radius:10px">
-        <p class="meta">每行一位：<b>学员姓名, 上司姓名</b>（中文或英文逗号均可；也可只填学员姓名）。也支持上传 .csv 文件。</p>
-        <textarea id="batchText" rows="6" style="width:100%;font:inherit" placeholder="张三, 李经理&#10;王五, 赵总监&#10;..."></textarea>
+        <p class="meta">每行一位：<b>学员姓名, 直接上司姓名</b>（上司可留空）。Excel（.xlsx）里只要有一列姓名就能认出来，列顺序不限，表头写「姓名 / 学员姓名 / 上司」都能识别。</p>
+        <textarea id="batchText" rows="6" style="width:100%;font:inherit" placeholder="张三, 李经理&#10;王五&#10;..."></textarea>
         <div style="display:flex;gap:8px;margin-top:8px;flex-wrap:wrap;align-items:center">
           <button class="btn ghost sm" id="btnParseBatch">解析并填入名单</button>
-          <label class="btn ghost sm" style="cursor:pointer;margin:0">上传 CSV<input type="file" id="batchFile" accept=".csv,text/csv" style="display:none"></label>
+          <label class="btn" id="batchUploadWrap" style="cursor:pointer;margin:0">上传名单文件（CSV / Excel）<input type="file" id="batchFile" accept=".csv,.txt,.xlsx,.xls,text/csv" style="display:none"></label>
+          <button class="btn ghost sm" id="btnTplCsv">下载空白名单模板</button>
           <span id="batchHint" class="meta"></span>
         </div>
+        <p class="meta" style="margin-top:6px;font-size:12px">模板里有两行示例（一行带上司、一行不带），照着填完删掉示例即可。老版 .xls 请先另存为 .xlsx 或 CSV。</p>
       </div>
       <div id="roster"></div>
       <button class="btn ghost sm" id="btnAddStudent" style="margin-top:8px">+ 加一位学员</button>
@@ -801,8 +803,8 @@
     if (!state.roster.length) state.roster.push({ name: '', sup: '' });
     state.roster.forEach(function (s, i) {
       var d = document.createElement('div'); d.style.cssText = 'display:flex;gap:8px;margin:6px 0;align-items:center';
-      d.innerHTML = '<input style="flex:1" placeholder="学员姓名" data-ri="' + i + '" data-rf="name" value="' + esc(s.name) + '">' +
-        '<input style="flex:1" placeholder="直接上司姓名" data-ri="' + i + '" data-rf="sup" value="' + esc(s.sup) + '">' +
+      d.innerHTML = '<input style="flex:1" placeholder="学员姓名（必填）" data-ri="' + i + '" data-rf="name" value="' + esc(s.name) + '">' +
+        '<input style="flex:1" placeholder="直接上司姓名（选填）" data-ri="' + i + '" data-rf="sup" value="' + esc(s.sup) + '">' +
         '<button class="btn ghost sm" data-rdel="' + i + '">✕</button>';
       box.appendChild(d);
     });
@@ -815,37 +817,250 @@
   }
   $('btnAddStudent').addEventListener('click', function () { state.roster.push({ name: '', sup: '' }); renderRoster(); });
 
-  /* ------- 批量导入名单（粘贴 / CSV） ------- */
+  /* ------- 批量导入名单（粘贴 / CSV / Excel） ------- */
   $('btnBatchToggle').addEventListener('click', function () {
     $('batchPanel').classList.toggle('hidden');
   });
-  function parseRosterText(text) {
-    var lines = (text || '').split(/\r?\n/);
-    var out = [];
-    lines.forEach(function (ln) {
-      ln = ln.trim(); if (!ln) return;
-      var parts = ln.split(/[,，]/).map(function (s) { return s.trim(); });
-      if (parts[0]) out.push({ name: parts[0], sup: parts[1] || '' });
+
+  /* --- CSV / 文本：容忍中文逗号、制表符、引号包裹、BOM --- */
+  function parseCsvLine(line) {
+    var out = [], cur = '', q = false;
+    for (var i = 0; i < line.length; i++) {
+      var ch = line.charAt(i);
+      if (q) {
+        if (ch === '"') {
+          if (line.charAt(i + 1) === '"') { cur += '"'; i++; } else { q = false; }
+        } else { cur += ch; }
+      } else if (ch === '"') { q = true; }
+      else if (ch === ',') { out.push(cur); cur = ''; }
+      else { cur += ch; }
+    }
+    out.push(cur);
+    return out.map(function (s) { return String(s).replace(/^\uFEFF/, '').trim(); });
+  }
+  function parseCsvText(text) {
+    return String(text || '').split(/\r?\n/).map(function (ln) {
+      return parseCsvLine(String(ln).replace(/[，\t]/g, ','));
     });
+  }
+
+  /* --- Excel(.xlsx)：零依赖读取，zip + deflate 自己解 --- */
+  function u16(b, o) { return b[o] | (b[o + 1] << 8); }
+  function u32(b, o) { return ((b[o] | (b[o + 1] << 8) | (b[o + 2] << 16) | (b[o + 3] << 24)) >>> 0); }
+  function zipIndex(bytes) {
+    var eo = -1, start = Math.max(0, bytes.length - 66000);
+    for (var i = bytes.length - 22; i >= start; i--) { if (u32(bytes, i) === 0x06054b50) { eo = i; break; } }
+    if (eo < 0) throw new Error('不是有效的 xlsx 文件');
+    var count = u16(bytes, eo + 10), p = u32(bytes, eo + 16), map = {};
+    for (var k = 0; k < count && p < bytes.length; k++) {
+      if (u32(bytes, p) !== 0x02014b50) break;
+      var method = u16(bytes, p + 10), csize = u32(bytes, p + 20);
+      var nLen = u16(bytes, p + 28), eLen = u16(bytes, p + 30), cLen = u16(bytes, p + 32);
+      var lo = u32(bytes, p + 42);
+      var nm = new TextDecoder('utf-8').decode(bytes.subarray(p + 46, p + 46 + nLen));
+      map[nm] = { method: method, csize: csize, lo: lo };
+      p += 46 + nLen + eLen + cLen;
+    }
+    return map;
+  }
+  function zipRead(bytes, entry) {
+    var nLen = u16(bytes, entry.lo + 26), eLen = u16(bytes, entry.lo + 28);
+    var from = entry.lo + 30 + nLen + eLen;
+    var data = bytes.subarray(from, from + (entry.csize || (bytes.length - from)));
+    if (entry.method === 0) return Promise.resolve(data);
+    if (entry.method !== 8) return Promise.reject(new Error('xlsx 压缩格式不支持，请另存为 CSV'));
+    if (typeof DecompressionStream === 'undefined') {
+      return Promise.reject(new Error('当前浏览器不支持读取 Excel，请把名单另存为 CSV 再上传'));
+    }
+    var st = new Blob([data]).stream().pipeThrough(new DecompressionStream('deflate-raw'));
+    return new Response(st).arrayBuffer().then(function (ab) { return new Uint8Array(ab); });
+  }
+  function colNo(ref) {
+    var m = /^([A-Z]+)/.exec(String(ref || '').toUpperCase());
+    if (!m) return 0;
+    var n = 0;
+    for (var i = 0; i < m[1].length; i++) n = n * 26 + (m[1].charCodeAt(i) - 64);
+    return n - 1;
+  }
+  function sheetMatrix(xml, shared) {
+    var doc = new DOMParser().parseFromString(xml, 'application/xml');
+    var rows = doc.getElementsByTagName('row'), out = [];
+    for (var i = 0; i < rows.length; i++) {
+      var cs = rows[i].getElementsByTagName('c'), arr = [];
+      for (var j = 0; j < cs.length; j++) {
+        var c = cs[j], t = c.getAttribute('t'), v = '';
+        if (t === 's') {
+          var sv = c.getElementsByTagName('v')[0];
+          v = sv ? (shared[+sv.textContent] || '') : '';
+        } else if (t === 'inlineStr') {
+          var ist = c.getElementsByTagName('t')[0];
+          v = ist ? ist.textContent : '';
+        } else {
+          var nv = c.getElementsByTagName('v')[0];
+          v = nv ? nv.textContent : '';
+        }
+        arr[colNo(c.getAttribute('r'))] = String(v == null ? '' : v).trim();
+      }
+      for (var z = 0; z < arr.length; z++) if (arr[z] === undefined) arr[z] = '';
+      out.push(arr);
+    }
     return out;
   }
-  $('btnParseBatch').addEventListener('click', function () {
-    var parsed = parseRosterText($('batchText').value);
-    if (!parsed.length) { $('batchHint').textContent = '没有解析到有效行（每行：学员姓名, 上司姓名）'; return; }
-    // 合并去重（按姓名）
+  function xlsxMatrix(buf) {
+    var bytes = new Uint8Array(buf), idx;
+    try { idx = zipIndex(bytes); } catch (e) { return Promise.reject(e); }
+    var read = function (name) {
+      return idx[name] ? zipRead(bytes, idx[name]).then(function (u8) { return new TextDecoder('utf-8').decode(u8); }) : Promise.resolve(null);
+    };
+    return read('xl/sharedStrings.xml').then(function (ssXml) {
+      var shared = [];
+      if (ssXml) {
+        var doc = new DOMParser().parseFromString(ssXml, 'application/xml');
+        var sis = doc.getElementsByTagName('si');
+        for (var i = 0; i < sis.length; i++) {
+          var ts = sis[i].getElementsByTagName('t'), s = '';
+          for (var j = 0; j < ts.length; j++) s += ts[j].textContent;
+          shared.push(s);
+        }
+      }
+      var sheets = Object.keys(idx).filter(function (n) { return /^xl\/worksheets\/sheet\d+\.xml$/.test(n); })
+        .sort(function (a, b) { return (+a.replace(/\D/g, '')) - (+b.replace(/\D/g, '')); });
+      if (!sheets.length) throw new Error('这个 xlsx 里没有找到工作表');
+      var i2 = 0;
+      function next() {
+        if (i2 >= sheets.length) return [];
+        return read(sheets[i2++]).then(function (xml) {
+          var m = xml ? sheetMatrix(xml, shared) : [];
+          var hasData = m.some(function (r) { return r.some(function (c) { return c; }); });
+          if (hasData) return m;
+          return next();
+        });
+      }
+      return next();
+    });
+  }
+
+  /* --- 认列：有表头按表头，没表头按位置 --- */
+  var SUP_KW = /(上司|主管|上级|领导|经理|负责人|supervisor|manager)/i;
+  var NAME_KW = /(姓名|名字|学员|员工|成员|name|student|employee|member)/i;
+  function pickRoster(matrix) {
+    var rows = (matrix || []).filter(function (r) {
+      return r && r.some(function (c) { return String(c || '').trim(); });
+    });
+    if (!rows.length) return { people: [], hasHeader: false };
+    var nameCol = -1, supCol = -1, headerRow = -1;
+    for (var i = 0; i < Math.min(rows.length, 12); i++) {
+      var r = rows[i], nC = -1, sC = -1;
+      for (var j = 0; j < r.length; j++) {
+        var c = String(r[j] || '').replace(/\s/g, '');
+        if (!c) continue;
+        if (SUP_KW.test(c) && sC < 0) sC = j;
+        else if (NAME_KW.test(c) && nC < 0) nC = j;
+      }
+      // 只有「姓名列」出现才算表头：否则「张三, 李经理」会被误判成表头（经理撞词）
+      if (nC >= 0) { headerRow = i; nameCol = nC; supCol = sC; break; }
+    }
+    var from = 0;
+    if (nameCol < 0) {
+      // 没表头：首列若是序号（纯数字）就跳过它
+      var filled = 0, numeric = 0;
+      rows.slice(0, 12).forEach(function (r) {
+        var c = String(r[0] || '').trim();
+        if (c) { filled++; if (/^\d+$/.test(c)) numeric++; }
+      });
+      var wide = (rows[0] || []).length > 1;
+      nameCol = (wide && filled && numeric === filled) ? 1 : 0;
+      supCol = nameCol + 1;
+    } else {
+      from = headerRow + 1;
+    }
+    var people = [], seen = {};
+    for (var k = from; k < rows.length; k++) {
+      var row = rows[k];
+      var nm = String(row[nameCol] == null ? '' : row[nameCol]).trim();
+      var sp = (supCol >= 0 && supCol < row.length) ? String(row[supCol] == null ? '' : row[supCol]).trim() : '';
+      if (!nm) continue;
+      if (/^(合计|总计|小计|备注|说明|序号)$/.test(nm)) continue;
+      if (/^\d+(\.\d+)?$/.test(nm)) continue;
+      if (nm.length > 30) continue;
+      if (seen[nm]) continue;
+      seen[nm] = true;
+      if (/^(合计|总计|小计|备注|说明)$/.test(sp)) sp = '';
+      people.push({ name: nm, sup: sp });
+    }
+    return { people: people, hasHeader: headerRow >= 0 };
+  }
+
+  function mergeRoster(people) {
+    state.roster = state.roster.filter(function (s) { return String(s.name || '').trim(); });
     var seen = {};
     state.roster.forEach(function (s) { if (s.name) seen[s.name] = true; });
-    parsed.forEach(function (p) { if (!seen[p.name]) { state.roster.push(p); seen[p.name] = true; } });
-    $('batchHint').textContent = '已加入 ' + parsed.length + ' 人，当前共 ' + state.roster.length + ' 人。';
+    var added = 0;
+    people.forEach(function (p) { if (!seen[p.name]) { state.roster.push(p); seen[p.name] = true; added++; } });
     renderRoster();
+    return added;
+  }
+  function rosterReport(added, people, from) {
+    var kept = state.roster.filter(function (s) { return String(s.name || '').trim(); }).length;
+    var withSup = people.filter(function (p) { return p.sup; }).length;
+    $('batchHint').textContent = (from ? '已从「' + from + '」' : '') + '识别 ' + people.length + ' 人，新加入 ' + added +
+      ' 人（' + withSup + ' 位填了上司）· 当前名单共 ' + kept + ' 人';
+  }
+  $('btnParseBatch').addEventListener('click', function () {
+    var got = pickRoster(parseCsvText($('batchText').value));
+    if (!got.people.length) { $('batchHint').textContent = '没认出姓名。每行第一位应是学员姓名，例如：张三, 李经理'; return; }
+    rosterReport(mergeRoster(got.people), got.people, '');
   });
+
+  /* 文件转矩阵：xlsx 按 zip 解，CSV 自动判 UTF-8 / GBK */
+  function fileMatrix(file) {
+    return file.arrayBuffer().then(function (buf) {
+      var b = new Uint8Array(buf);
+      if (b[0] === 0x50 && b[1] === 0x4B) return xlsxMatrix(buf);
+      if (b[0] === 0xD0 && b[1] === 0xCF) {
+        throw new Error('这是老版 .xls 格式，请在 Excel 里「另存为」.xlsx 或 CSV 后再上传');
+      }
+      var txt;
+      try { txt = new TextDecoder('utf-8', { fatal: true }).decode(b); }
+      catch (e) {
+        try { txt = new TextDecoder('gbk').decode(b); }
+        catch (e2) { txt = new TextDecoder('utf-8').decode(b); }
+      }
+      return parseCsvText(txt);
+    });
+  }
   $('batchFile').addEventListener('change', function () {
     var f = this.files && this.files[0]; this.value = '';
     if (!f) return;
-    f.text().then(function (txt) {
-      $('batchText').value = txt;
-      $('btnParseBatch').click();
-    }).catch(function () { $('batchHint').textContent = '读取文件失败'; });
+    $('batchHint').textContent = '正在读取 ' + (f.name || '文件') + '…';
+    fileMatrix(f).then(function (matrix) {
+      var got = pickRoster(matrix);
+      if (!got.people.length) {
+        $('batchHint').textContent = '没从这个文件里认出姓名列。请确认表格里有一列是姓名，并在表头写上「姓名」或「学员姓名」；也可以先下载空白模板照着填。';
+        return;
+      }
+      rosterReport(mergeRoster(got.people), got.people, f.name);
+      $('batchText').value = got.people.map(function (p) { return p.name + (p.sup ? ', ' + p.sup : ''); }).join('\n');
+    }).catch(function (e) {
+      $('batchHint').textContent = '读取失败：' + (e && e.message ? e.message : e);
+    });
+  });
+
+  /* 空白名单模板（含两行示例，Excel 直接打开不乱码） */
+  $('btnTplCsv').addEventListener('click', function () {
+    var rows = [
+      ['学员姓名', '直接上司姓名'],
+      ['张三', '李经理'],
+      ['李四', '']
+    ];
+    var csv = '\uFEFF' + rows.map(function (r) { return r.map(csvCell).join(','); }).join('\r\n');
+    var blob = new Blob([csv], { type: 'text/csv;charset=utf-8' });
+    var a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = '学员名单模板.csv';
+    a.click();
+    setTimeout(function () { URL.revokeObjectURL(a.href); }, 1000);
+    $('batchHint').textContent = '模板已下载。第一行是表头，下面两行是示例，填完把示例行删掉再上传。';
   });
 
   /* ------- 四阶段时间线编辑 ------- */
@@ -921,13 +1136,15 @@
     var list = $('linkList'); list.innerHTML = '';
     lastLinks = [];
     (p.students || []).forEach(function (s) {
+      var hasSup = !!(s.supName && String(s.supName).trim());
       var sUrl = BASE + 'student.html?pid=' + p.id + '&tok=' + s.token;
-      var supUrl = BASE + 'supervisor.html?pid=' + p.id + '&tok=' + s.token + '&suptok=' + s.supToken;
+      var supUrl = hasSup ? (BASE + 'supervisor.html?pid=' + p.id + '&tok=' + s.token + '&suptok=' + s.supToken) : '';
       lastLinks.push({ name: s.name, sup: s.supName || '', sUrl: sUrl, supUrl: supUrl });
       var div = document.createElement('div'); div.style.cssText = 'margin:10px 0;padding:10px;border:1px solid var(--line);border-radius:10px';
-      div.innerHTML = '<div class="who"><b>' + esc(s.name) + '</b>　上司：' + esc(s.supName || '—') + '</div>' +
+      div.innerHTML = '<div class="who"><b>' + esc(s.name) + '</b>　' +
+          (hasSup ? '上司：' + esc(s.supName) : '<span class="meta">未填上司 · 只发学员链接即可</span>') + '</div>' +
         '<div class="linkrow"><span class="pill">学员</span><input readonly value="' + esc(sUrl) + '"><button class="btn ghost sm copybtn" data-c="' + esc(sUrl) + '">复制</button></div>' +
-        '<div class="linkrow"><span class="pill">上司</span><input readonly value="' + esc(supUrl) + '"><button class="btn ghost sm copybtn" data-c="' + esc(supUrl) + '">复制</button></div>';
+        (hasSup ? '<div class="linkrow"><span class="pill">上司</span><input readonly value="' + esc(supUrl) + '"><button class="btn ghost sm copybtn" data-c="' + esc(supUrl) + '">复制</button></div>' : '');
       list.appendChild(div);
     });
     list.querySelectorAll('.copybtn').forEach(function (b) {
@@ -939,7 +1156,7 @@
   $('btnCopyAll').addEventListener('click', function () {
     if (!lastLinks.length) return;
     var text = lastLinks.map(function (l) {
-      return (l.name || '') + (l.sup ? '（上司：' + l.sup + '）' : '') + '\n  学员：' + l.sUrl + '\n  上司：' + l.supUrl;
+      return (l.name || '') + (l.sup ? '（上司：' + l.sup + '）' : '') + '\n  学员：' + l.sUrl + (l.supUrl ? '\n  上司：' + l.supUrl : '');
     }).join('\n\n');
     if (navigator.clipboard) navigator.clipboard.writeText(text).then(function () { toast('已复制全部 ' + lastLinks.length + ' 条链接'); });
     else toast('请手动复制');
@@ -986,8 +1203,8 @@
   /* 协作人进入项目页时：全部字段只读，派发类按钮隐藏 */
   function applyProjectReadonly() {
     var ro = !state.isOwner;
-    ['btnGenLinks', 'btnAddStudent', 'btnBatchToggle', 'btnParseBatch', 'btnCopyAll', 'btnDownloadCsv',
-     'btnAddPFwRow', 'btnSavePFw', 'btnSyncPFw', 'collabCard']
+    ['btnGenLinks', 'btnAddStudent', 'btnBatchToggle', 'btnParseBatch', 'btnTplCsv', 'batchUploadWrap',
+     'btnCopyAll', 'btnDownloadCsv', 'btnAddPFwRow', 'btnSavePFw', 'btnSyncPFw', 'collabCard']
       .forEach(function (id) {
         var el = $(id); if (el) el.classList.toggle('hidden', ro);
       });
