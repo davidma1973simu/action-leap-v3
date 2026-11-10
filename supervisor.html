@@ -4,7 +4,7 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>Action Leap · 上司反馈</title>
-<link rel="stylesheet" href="styles.css" />
+<link rel="stylesheet" href="styles.css?v=19" />
 </head>
 <body>
 <div class="topbar">
@@ -63,8 +63,8 @@
 <div class="toast" id="toast"></div>
 
 <script src="https://cdn.jsdelivr.net/npm/@tencent-ai/workbuddy-cloud-sdk@dev/lib/index.global.js"></script>
-<script src="publicConfig.js"></script>
-<script src="cloud-core.js"></script>
+<script src="publicConfig.js?v=19"></script>
+<script src="cloud-core.js?v=19"></script>
 <script>
 (function () {
   'use strict';
@@ -98,8 +98,8 @@
     var info = A.phaseInfo({ schedule: schedule });
     if (!info) return;
     var HINTS = {
-      student: { fill: '现在该：填写你的迁移成果（补「结果影响 + 实际值」）', sup: '现在该：你的上司正在给反馈，可先安心推进工作', submit: '现在该：确认成果无误后正式提交', review: '现在该：等待讲师评价与案例评选' },
-      sup: { fill: '现在该：等待学员填写完成', sup: '现在该：给学员写三段式反馈（评语 / 建议 / 承诺跟进）', submit: '现在该：如还有补充可继续完善反馈', review: '现在该：等待讲师评价' }
+      student: { fill: '现在该：先定下自己的四张卡（场景 / 行为 / 指标）', sup: '现在该：你的上司正在给反馈，可先安心推进工作', submit: '现在该：补完做成了什么和实际值后正式提交', review: '现在该：等待讲师评价与案例评选' },
+      sup: { fill: '现在该：看学员自己定的工作场景与行为，方向不对可当场纠偏', sup: '现在该：给学员写三段式反馈（评语 / 建议 / 承诺跟进）', submit: '现在该：如还有补充可继续完善反馈', review: '现在该：等待讲师评价' }
     };
     $('timelineCard').classList.remove('hidden');
     var bar = $('timelineBar'); bar.innerHTML = '';
@@ -133,17 +133,32 @@
     var subs = (data.submission && data.submission.rows) || [];
     if (!subs.length) { $('subEmpty').classList.remove('hidden'); return; }
     $('subEmpty').classList.add('hidden');
-    fw.forEach(function (a) {
+    fw.forEach(function (a, idx) {
       var s = subs.find(function (x) { return x.id === a.id; }) || {};
-      var quantified = a.target !== '' && a.target != null;
       var card = document.createElement('div'); card.className = 'fb';
-      var html = '<div class="who"><span class="pill">' + A.esc(a.section || '行动') + '</span> &nbsp;' + A.esc(a.action || '') + '</div>';
-      html += '<div class="meta">场景：' + A.esc(a.scene || '—') + '</div>';
-      if (quantified) html += '<div class="meta" style="margin-top:4px">量化目标：' + A.esc(a.target) + (a.note ? ' · ' + A.esc(a.note) : '') + '</div>';
-      html += '<div style="margin-top:6px"><b>结果影响：</b>' + A.esc(s.resultImpact || '（未填写）') + '</div>';
-      if (quantified) html += '<div class="meta">实际值：' + A.esc(s.quantActual != null ? s.quantActual : '—') + '</div>';
-      if (s.difficulty) html += '<div class="meta">困难：' + A.esc(s.difficulty) + '</div>';
-      if (s.futureApplication) html += '<div class="meta">未来应用：' + A.esc(s.futureApplication) + '</div>';
+      var html;
+      if (A.isNewRow(a)) {
+        html = '<div class="who"><span class="pill">第 ' + (idx + 1) + ' 张卡 · ' + A.esc(A.directionLabel(a.direction)) + '</span> &nbsp;' + A.esc(a.method || '工具方法') + '</div>';
+        html += '<div class="meta">主题任务：' + A.esc(a.task || '—') + '</div>';
+        html += '<div style="margin-top:8px"><b>① 工作场景：</b>' + A.esc(s.scene || '（未定）') + '</div>';
+        html += '<div><b>② 改善什么行为：</b>' + A.esc(s.behavior || '（未定）') + '</div>';
+        html += '<div><b>④ 改善哪个指标：</b>' + A.esc(s.metricName || '（未定）') +
+          (s.baseline || s.goal ? ' · ' + A.esc(s.baseline || '—') + ' → ' + A.esc(s.goal || '—') : '') +
+          (s.unit ? ' ' + A.esc(s.unit) : '') + '</div>';
+        html += '<div style="margin-top:6px"><b>③ 做成了什么：</b>' + A.esc(s.resultImpact || '（未填写）') + '</div>';
+        if (s.quantActual !== '' && s.quantActual != null) html += '<div class="meta">实际值：' + A.esc(s.quantActual) + '</div>';
+        var ach = A.cardAchieved(s);
+        if (ach !== null) html += '<div class="meta">' + (ach ? '达到自己设的目标' : '未达到自己设的目标') + '</div>';
+      } else {
+        var quantified = a.target !== '' && a.target != null;
+        html = '<div class="who"><span class="pill">' + A.esc(a.section || '行动') + '</span> &nbsp;' + A.esc(a.action || '') + '</div>';
+        html += '<div class="meta">场景：' + A.esc(a.scene || '—') + '</div>';
+        if (quantified) html += '<div class="meta" style="margin-top:4px">量化目标：' + A.esc(a.target) + (a.note ? ' · ' + A.esc(a.note) : '') + '</div>';
+        html += '<div style="margin-top:6px"><b>结果影响：</b>' + A.esc(s.resultImpact || '（未填写）') + '</div>';
+        if (quantified) html += '<div class="meta">实际值：' + A.esc(s.quantActual != null ? s.quantActual : '—') + '</div>';
+        if (s.difficulty) html += '<div class="meta">困难：' + A.esc(s.difficulty) + '</div>';
+        if (s.futureApplication) html += '<div class="meta">未来应用：' + A.esc(s.futureApplication) + '</div>';
+      }
       card.innerHTML = html;
       body.appendChild(card);
     });

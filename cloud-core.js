@@ -46,6 +46,60 @@
   }
   function emptyFramework() { return []; }
 
+  /* ---------------- 学员卡数据契约（v2） ----------------
+   * 讲师只给：method 工具方法 / task 主题任务 / hintScene、hintBehavior 可改写提示
+   *           / direction 指标方向（5 选 1，仅用于汇报分组）
+   * 学员自己写：scene 工作场景 / behavior 改善什么行为 / metricName+unit 改善哪个指标
+   *           / baseline 现在是多少 / goal 想变成多少
+   *           / resultImpact 做成了什么 / quantActual 实际值
+   * 旧数据行（section/scene/action/target/note）原样保留，各页面按 isNewRow 分别渲染，
+   * 不清库、不迁移、不覆盖 —— 两期测试数据仍可正常打开。
+   * --------------------------------------------------- */
+  var DIRECTIONS = [
+    { k: 'efficiency', name: '效率', hint: '周期 / 响应速度 / 等待时间' },
+    { k: 'quality',    name: '质量', hint: '准确率 / 返工 / 差错' },
+    { k: 'cost',       name: '成本', hint: '费用 / 工时 / 资源投入' },
+    { k: 'collab',     name: '协同', hint: '跨部门 / 沟通 / 决策' },
+    { k: 'growth',     name: '业绩', hint: '成交 / 收入 / 客户 / 产出' }
+  ];
+  function directionLabel(k) {
+    for (var i = 0; i < DIRECTIONS.length; i++) if (DIRECTIONS[i].k === k) return DIRECTIONS[i].name;
+    return '未分类';
+  }
+  function isNewRow(r) { return !!(r && (r.v === 2 || r.method || r.task)); }
+  function newRow() {
+    return { id: uid('a'), v: 2, method: '', task: '', hintScene: '', hintBehavior: '', direction: 'efficiency' };
+  }
+  /* 清洗讲师端一行。新行走新字段；有旧字段的老行原样保留。 */
+  function cleanRow(r) {
+    r = r || {};
+    var legacy = r.section || r.scene || r.action || r.target || r.note;
+    if (isNewRow(r) || !legacy) {
+      return { id: r.id || uid('a'), v: 2,
+        method: r.method || '', task: r.task || '',
+        hintScene: r.hintScene || '', hintBehavior: r.hintBehavior || '',
+        direction: r.direction || 'efficiency' };
+    }
+    return { id: r.id || uid('a'), section: r.section || '', scene: r.scene || '',
+      action: r.action || '', target: r.target || '',
+      direction: r.direction || 'up', note: r.note || '' };
+  }
+  /* 达成判定：新卡按「现在 → 想变成」自动推断升/降，旧行按讲师设的 up/down。
+   * 只用于逐卡明细，不汇总成全班总指标。 */
+  function cardAchieved(r) {
+    if (!r) return null;
+    if (r.v === 2 || (r.goal != null && r.goal !== '')) {
+      var b = parseFloat(r.baseline), g = parseFloat(r.goal), a = parseFloat(r.quantActual);
+      if (isNaN(g) || isNaN(a)) return null;
+      var up = isNaN(b) ? true : (g >= b);
+      return up ? (a >= g) : (a <= g);
+    }
+    if (r.target === '' || r.target == null) return null;
+    var t = parseFloat(r.target), av = parseFloat(r.quantActual);
+    if (isNaN(t) || isNaN(av)) return null;
+    return (r.direction === 'down') ? (av <= t) : (av >= t);
+  }
+
   /* ---------------- Auth（创建者登录，邮箱验证码，无密码） ---------------- */
   var auth = {
     getSession: function () { return getCloud().auth.getSession(); },
@@ -243,7 +297,10 @@
    * 写入一律整表覆盖，避免多条并发 read-modify-write 互相吞掉。
    * ------------------------------------------------------------ */
   function templateKey(t) {
-    return [t.section, t.action, t.scene].map(function (s) {
+    var parts = (isNewRow(t) || t.behavior)
+      ? ['v2', t.scene, t.behavior, t.task]
+      : [t.section, t.action, t.scene];
+    return parts.map(function (s) {
       return String(s || '').replace(/\s+/g, '').toLowerCase();
     }).join('|');
   }
@@ -264,6 +321,10 @@
           list[idx[k]] = Object.assign({}, old, {
             section: t.section || old.section, action: t.action || old.action,
             scene: t.scene || old.scene, target: t.target || old.target,
+            method: t.method || old.method, task: t.task || old.task,
+            behavior: t.behavior || old.behavior, metricName: t.metricName || old.metricName,
+            unit: t.unit || old.unit, baseline: t.baseline || old.baseline,
+            goal: t.goal || old.goal, direction: t.direction || old.direction,
             resultImpact: t.resultImpact || old.resultImpact,
             quantActual: t.quantActual || old.quantActual,
             source: t.source || old.source,
@@ -433,7 +494,7 @@
       if (!models.length) throw new Error('no-model');
       var model = models[0];
       var messages = [
-        { role: 'system', content: '你是企业培训课程设计师。只输出严格 JSON 数组，每个对象含字段：section(掌握的新方法，简短), scene(应用场景，具体的工作情景), action(具体行动，学员在岗位上做出来的可观察行为), target(量化目标值，填不到就留空串), direction(up或down), note(改善的绩效指标名，如无则空串)。不要解释，不要 markdown。' },
+        { role: 'system', content: '你是企业培训课程设计师。只输出严格 JSON 数组，每个对象含字段：method(课上教的工具方法，简短), task(课后主题任务：让学员把方法用到自己岗位上的练习，不要写死具体工作场景), hintScene(给学员的场景启发，用「例如…」开头，只是提示不是答案), hintBehavior(给学员的行为启发，同样只是提示), direction(指标方向，只能是 efficiency/quality/cost/collab/growth 之一)。严禁替学员写死工作场景、具体行为或指标名——那是学员自己要定的。不要解释，不要 markdown。' },
         { role: 'user', content: prompt }
       ];
       var answer = '';
@@ -466,6 +527,8 @@
   global.ALC = {
     init: init, getCloud: getCloud,
     uid: uid, slug: slug, token: token, esc: esc, emptyFramework: emptyFramework,
+    DIRECTIONS: DIRECTIONS, directionLabel: directionLabel, isNewRow: isNewRow,
+    newRow: newRow, cleanRow: cleanRow, cardAchieved: cardAchieved,
     auth: auth,
     listCourses: listCourses, getCourse: getCourse, saveCourse: saveCourse, deleteCourse: deleteCourse,
     listProjects: listProjects, getProject: getProject, saveProject: saveProject, deleteProject: deleteProject,

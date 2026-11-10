@@ -4,7 +4,7 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>Action Leap · 学习迁移工作台（创建者）</title>
-<link rel="stylesheet" href="styles.css" />
+<link rel="stylesheet" href="styles.css?v=19" />
 </head>
 <body>
 
@@ -140,7 +140,7 @@
 
     <div class="card">
       <div style="display:flex;gap:10px;align-items:center">
-        <div class="eyebrow" style="margin:0">一张迁移表（掌握新方法 / 场景 / 行动 / 量化验收）</div>
+        <div class="eyebrow" style="margin:0">工具方法 + 主题任务（讲师只给这两样）</div>
         <div class="spacer"></div>
         <button class="cmt-btn" data-cmt-kind="fw" data-cmt-ref="all" data-cmt-label="迁移表整体"></button>
         <button class="btn ghost sm" id="btnAIDraft">AI 起草</button>
@@ -148,13 +148,13 @@
         <input type="file" id="fileInput" accept=".txt,.md,.docx" class="hidden">
         <button class="btn ghost sm" id="btnAddRow">+ 加一行</button>
       </div>
-      <p class="meta">每行 = 一个要掌握的新方法在真实场景中的行动。学员填写时只需补「结果 + 实际值」两栏，降低负担。</p>
+      <p class="meta">每行是一个主题任务：给方法、给练习、给两句<b>可改写的提示</b>，再选一个指标方向。<b>不要替学员写工作场景、具体行为和指标名</b>——那三样由学员自己定，才叫迁移。默认 4 行，学员据此定 4 张自己的卡。</p>
       <div class="note hidden" id="aiNote"></div>
       <div style="overflow:auto">
         <table class="one" id="fwTable">
           <thead><tr>
-            <th class="idx">#</th><th>掌握新方法</th><th>应用场景</th><th>具体行动</th>
-            <th>目标</th><th>方向</th><th>改善的绩效指标</th><th></th>
+            <th class="idx">#</th><th>工具方法</th><th>主题任务</th><th>场景提示（可改写）</th>
+            <th>行为提示（可改写）</th><th>指标方向</th><th></th>
           </tr></thead>
           <tbody id="fwBody"></tbody>
         </table>
@@ -245,12 +245,12 @@
         <button class="btn ghost sm" id="btnSyncPFw">用母版最新版覆盖</button>
         <button class="btn ghost sm" id="btnAddPFwRow">+ 加一行</button>
       </div>
-      <p class="meta">这是本项目专用的一份，客户要什么就改这一份：改场景、删掉不适用的行、加一条客户特别关心的行动。改它不影响母版，也不影响别的客户。学员看到的就是这一份。</p>
+      <p class="meta">这是本项目专用的一份，客户要什么就改这一份：换主题任务、改提示、调指标方向、删掉不适用的行。改它不影响母版，也不影响别的客户。学员看到的就是这一份，四张卡由他自己填。</p>
       <div style="overflow:auto">
         <table class="one" id="pfwTable">
           <thead><tr>
-            <th class="idx">#</th><th>掌握新方法</th><th>应用场景</th><th>具体行动</th>
-            <th>目标</th><th>方向</th><th>改善的绩效指标</th><th></th>
+            <th class="idx">#</th><th>工具方法</th><th>主题任务</th><th>场景提示（可改写）</th>
+            <th>行为提示（可改写）</th><th>指标方向</th><th></th>
           </tr></thead>
           <tbody id="pfwBody"></tbody>
         </table>
@@ -301,9 +301,9 @@
 <div class="toast" id="toast"></div>
 
 <script src="https://cdn.jsdelivr.net/npm/@tencent-ai/workbuddy-cloud-sdk@dev/lib/index.global.js"></script>
-<script src="publicConfig.js?v=18"></script>
-<script src="cloud-core.js?v=18"></script>
-<script src="comments.js?v=17"></script>
+<script src="publicConfig.js?v=19"></script>
+<script src="cloud-core.js?v=19"></script>
+<script src="comments.js?v=19"></script>
 <script>
 (function () {
   'use strict';
@@ -576,7 +576,7 @@
   }
   $('btnNewCourse').addEventListener('click', function () {
     state.course = { theme: '', needs: '', framework: [], templates: [] };
-    state.rows = []; state.isOwner = true;
+    state.rows = [A.newRow(), A.newRow(), A.newRow(), A.newRow()]; state.isOwner = true;
     renderCourse(); show('course');
   });
   $('btnBackDash').addEventListener('click', function () { show('dashboard'); loadCourses(); });
@@ -626,13 +626,20 @@
     tpls.forEach(function (t, i) {
       var tid = t.id || ('t' + i);
       var d = document.createElement('div'); d.className = 'fb';
+      var isNew = A.isNewRow(t) || !!t.behavior;
       if (state.editingTpl === tid) {
         d.innerHTML =
           '<div class="tpl-edit">' +
-            '<label>掌握的新方法</label><input type="text" data-tf="section" value="' + esc(t.section) + '">' +
-            '<label>应用场景</label><input type="text" data-tf="scene" value="' + esc(t.scene) + '">' +
-            '<label>具体行动（学员做成了什么）</label><input type="text" data-tf="action" value="' + esc(t.action) + '">' +
-            '<label>结果与影响</label><input type="text" data-tf="resultImpact" value="' + esc(t.resultImpact) + '">' +
+            (isNew
+              ? '<label>工具方法</label><input type="text" data-tf="method" value="' + esc(t.method || '') + '">' +
+                '<label>主题任务</label><input type="text" data-tf="task" value="' + esc(t.task || '') + '">' +
+                '<label>学员定下的工作场景</label><input type="text" data-tf="scene" value="' + esc(t.scene || '') + '">' +
+                '<label>改善什么行为</label><input type="text" data-tf="behavior" value="' + esc(t.behavior || '') + '">' +
+                '<label>改善哪个指标</label><input type="text" data-tf="metricName" value="' + esc(t.metricName || '') + '">'
+              : '<label>掌握的新方法</label><input type="text" data-tf="section" value="' + esc(t.section || '') + '">' +
+                '<label>应用场景</label><input type="text" data-tf="scene" value="' + esc(t.scene || '') + '">' +
+                '<label>具体行动</label><input type="text" data-tf="action" value="' + esc(t.action || '') + '">') +
+            '<label>做成了什么</label><input type="text" data-tf="resultImpact" value="' + esc(t.resultImpact || '') + '">' +
             '<div style="display:flex;gap:8px;margin-top:10px">' +
               '<button class="btn sm" data-tplsave="' + esc(tid) + '">保存修改</button>' +
               '<button class="btn ghost sm" data-tplcancel="1">取消</button>' +
@@ -655,16 +662,20 @@
         if (cb) cb.addEventListener('click', function () { state.editingTpl = null; renderTemplates(); });
         return;
       }
-      d.innerHTML = '<div class="tpl-head"><div class="who"><span class="pill">' + esc(t.section || '行动') + '</span> &nbsp;' + esc(t.action || '') + '</div>' +
+      d.innerHTML = '<div class="tpl-head"><div class="who"><span class="pill">' + esc(t.method || t.section || '范例') + '</span> &nbsp;' + esc(t.task || t.action || '') + '</div>' +
           (ro ? '' : '<div class="tpl-act"><button class="btn ghost sm" data-tpledit="' + esc(tid) + '">修改</button>' +
             '<button class="btn ghost sm" data-tpldel="' + esc(tid) + '">删除</button></div>') +
         '</div>' +
-        '<div class="meta">场景：' + esc(t.scene || '—') + '</div>' +
-        (t.resultImpact ? '<div style="margin-top:4px">' + esc(t.resultImpact) + '</div>' : '') +
+        '<div class="meta">学员的工作场景：' + esc(t.scene || '—') + '</div>' +
+        (t.behavior ? '<div class="meta">改善的行为：' + esc(t.behavior) + '</div>' : '') +
+        (t.metricName ? '<div class="meta">指标：' + esc(t.metricName) +
+          (t.baseline || t.goal ? ' · ' + esc(t.baseline || '—') + ' → ' + esc(t.goal || '—') : '') +
+          (t.unit ? ' ' + esc(t.unit) : '') + '</div>' : '') +
+        (t.resultImpact ? '<div style="margin-top:4px">做成了什么：' + esc(t.resultImpact) + '</div>' : '') +
         '<div class="meta" style="margin-top:4px">范例来源：' + esc(t.source || '学员') + ' · ' + esc((t.createdAt || '').slice(0, 10)) +
           (t.updatedAt ? ' · 已修订' : '') + '</div>' +
         '<div style="margin-top:8px"><button class="cmt-btn" data-cmt-kind="template" ' +
-          'data-cmt-ref="' + esc(tid) + '" data-cmt-label="范例：' + esc(t.action || '未命名') + '"></button></div>';
+          'data-cmt-ref="' + esc(tid) + '" data-cmt-label="范例：' + esc(t.task || t.action || '未命名') + '"></button></div>';
       box.appendChild(d);
       var eb = d.querySelector('[data-tpledit]');
       if (eb) eb.addEventListener('click', function () { state.editingTpl = eb.getAttribute('data-tpledit'); renderTemplates(); });
@@ -681,23 +692,50 @@
   }
   function bindRowTable(bodyId, rows, ro, cmtKind) {
     var body = $(bodyId); if (!body) return;
+    /* 全是旧行 → 沿用老七列（两期测试数据原样打开）；只要有一行新数据 → 新五列 */
+    var legacy = rows.length > 0 && rows.every(function (r) { return !A.isNewRow(r); });
+    var table = body.closest('table');
+    if (table && table.tHead && table.tHead.rows[0]) {
+      table.tHead.rows[0].innerHTML = legacy
+        ? '<th class="idx">#</th><th>掌握新方法</th><th>应用场景</th><th>具体行动</th><th>目标</th><th>方向</th><th>改善的绩效指标</th><th></th>'
+        : '<th class="idx">#</th><th>工具方法</th><th>主题任务</th><th>场景提示（可改写）</th><th>行为提示（可改写）</th><th>指标方向</th><th></th>';
+    }
     body.innerHTML = '';
     rows.forEach(function (r, i) {
       var tr = document.createElement('tr');
-      tr.innerHTML =
-        '<td class="idx">' + (i + 1) + '</td>' +
-        '<td><input data-i="' + i + '" data-f="section" value="' + esc(r.section) + '" style="min-width:150px"></td>' +
-        '<td><input data-i="' + i + '" data-f="scene" value="' + esc(r.scene) + '" style="min-width:220px"></td>' +
-        '<td><input data-i="' + i + '" data-f="action" value="' + esc(r.action) + '" style="min-width:260px"></td>' +
-        '<td><input data-i="' + i + '" data-f="target" value="' + esc(r.target) + '" style="width:90px"></td>' +
-        '<td><select data-i="' + i + '" data-f="direction"><option value="up">↑提升</option><option value="down">↓下降</option></select></td>' +
-        '<td><input data-i="' + i + '" data-f="note" value="' + esc(r.note) + '" style="min-width:170px"></td>' +
-        '<td style="white-space:nowrap;text-align:right">' +
-          '<button class="cmt-btn" data-cmt-kind="' + cmtKind + '" data-cmt-ref="' + esc(r.id || ('i' + i)) + '" ' +
-            'data-cmt-label="第' + (i + 1) + '行 · ' + esc(r.section || '行动') + '"></button>' +
-          (ro ? '' : ' <button class="btn ghost sm" data-del="' + i + '">删</button>') +
-        '</td>';
+      var tail = '<td style="white-space:nowrap;text-align:right">' +
+        '<button class="cmt-btn" data-cmt-kind="' + cmtKind + '" data-cmt-ref="' + esc(r.id || ('i' + i)) + '" ' +
+        'data-cmt-label="第' + (i + 1) + '行 · ' + esc(r.method || r.task || r.section || '行动') + '"></button>' +
+        (ro ? '' : ' <button class="btn ghost sm" data-del="' + i + '">删</button>') + '</td>';
+      if (legacy) {
+        tr.innerHTML =
+          '<td class="idx">' + (i + 1) + '</td>' +
+          '<td><input data-i="' + i + '" data-f="section" value="' + esc(r.section) + '" style="min-width:150px"></td>' +
+          '<td><input data-i="' + i + '" data-f="scene" value="' + esc(r.scene) + '" style="min-width:220px"></td>' +
+          '<td><input data-i="' + i + '" data-f="action" value="' + esc(r.action) + '" style="min-width:260px"></td>' +
+          '<td><input data-i="' + i + '" data-f="target" value="' + esc(r.target) + '" style="width:90px"></td>' +
+          '<td><select data-i="' + i + '" data-f="direction"><option value="up">↑提升</option><option value="down">↓下降</option></select></td>' +
+          '<td><input data-i="' + i + '" data-f="note" value="' + esc(r.note) + '" style="min-width:170px"></td>' + tail;
+      } else {
+        /* 新旧混排（旧课程里加了新行）：旧行按字段映射只读展示，不让管理员误当成空行改掉 */
+        var isOld = !A.isNewRow(r);
+        var g = function (k, lk) { return isOld ? (r[lk] || '') : (r[k] || ''); };
+        var opts = A.DIRECTIONS.map(function (d) { return '<option value="' + d.k + '">' + d.name + '</option>'; }).join('');
+        var dirCell = isOld ? '<td><span class="meta">旧版 · 只读</span></td>'
+          : '<td><select data-i="' + i + '" data-f="direction">' + opts + '</select></td>';
+        tr.innerHTML =
+          '<td class="idx">' + (i + 1) + (isOld ? '<br><span class="meta" style="font-size:10px">旧</span>' : '') + '</td>' +
+          '<td><input data-i="' + i + '" data-f="method" value="' + esc(g('method', 'section')) + '" placeholder="课上教的那套做法" style="min-width:170px"></td>' +
+          '<td><input data-i="' + i + '" data-f="task" value="' + esc(g('task', 'action')) + '" placeholder="这期要练什么" style="min-width:210px"></td>' +
+          '<td><input data-i="' + i + '" data-f="hintScene" value="' + esc(g('hintScene', 'scene')) + '" placeholder="例如：你每周要对齐的那类会议" style="min-width:210px"></td>' +
+          '<td><input data-i="' + i + '" data-f="hintBehavior" value="' + esc(isOld ? '' : (r.hintBehavior || '')) + '" placeholder="例如：会前先把共同指标写进议程" style="min-width:210px"></td>' +
+          dirCell + tail;
+        if (isOld) tr.setAttribute('data-old', '1');
+      }
       body.appendChild(tr);
+    });
+    body.querySelectorAll('tr[data-old] input,tr[data-old] select').forEach(function (el) {
+      el.disabled = true; el.classList.add('ro-field');
     });
     if (ro) {
       body.querySelectorAll('input,select').forEach(function (el) {
@@ -717,7 +755,7 @@
       });
     });
     body.querySelectorAll('select[data-f="direction"]').forEach(function (s) {
-      s.value = rows[+s.getAttribute('data-i')].direction || 'up';
+      s.value = rows[+s.getAttribute('data-i')].direction || (legacy ? 'up' : 'efficiency');
     });
     if (window.ALCM) window.ALCM.decorate(body);
   }
@@ -727,14 +765,9 @@
   function renderPFw() {
     bindRowTable('pfwBody', state.pfw, !state.isOwner, 'pf_row');
   }
-  function cleanRows(rows) {
-    return (rows || []).map(function (r) {
-      return { id: r.id || A.uid('a'), section: r.section || '', scene: r.scene || '', action: r.action || '',
-        target: r.target || '', direction: r.direction || 'up', note: r.note || '' };
-    });
-  }
+  function cleanRows(rows) { return (rows || []).map(A.cleanRow); }
   $('btnAddPFwRow').addEventListener('click', function () {
-    state.pfw.push({ id: A.uid('a'), section: '', scene: '', action: '', target: '', direction: 'up', note: '' });
+    state.pfw.push(A.newRow());
     renderPFw();
   });
   $('btnSavePFw').addEventListener('click', function () {
@@ -752,7 +785,7 @@
     }).catch(function (e) { $('pfwErr').textContent = '取母版失败：' + (e.message || e); });
   });
   $('btnAddRow').addEventListener('click', function () {
-    state.rows.push({ id: A.uid('a'), section: '', scene: '', action: '', target: '', direction: 'up', note: '' });
+    state.rows.push(A.newRow());
     renderFw();
   });
   $('btnSaveCourse').addEventListener('click', function () {
@@ -820,11 +853,14 @@
     var box = $('cmtInbox'); if (!box || !window.ALCM) return;
     box.innerHTML = window.ALCM.inboxHTML();
   }
+  function validDir(k) {
+    return A.DIRECTIONS.some(function (d) { return d.k === k; }) ? k : 'efficiency';
+  }
   function applyDraft(rows, noteText) {
     state.rows = rows.map(function (r) {
-      return { id: A.uid('a'), section: r.section || '', scene: r.scene || '', action: r.action || '',
-        target: r.target != null ? String(r.target) : '',
-        direction: r.direction === 'down' ? 'down' : 'up', note: r.note || '' };
+      return { id: A.uid('a'), v: 2, method: r.method || '', task: r.task || '',
+        hintScene: r.hintScene || '', hintBehavior: r.hintBehavior || '',
+        direction: validDir(r.direction) };
     });
     renderFw();
     $('aiNote').textContent = noteText;
@@ -837,7 +873,7 @@
     var c = state.course;
     var prompt = '课程主题：' + ($('cTheme').value.trim() || c.theme) + '\n' +
       '目标：' + ($('cNeeds').value.trim() || c.needs) + '\n' +
-      '请设计课后学习迁移表，4-6 行，每行 = 一个掌握的新方法 × 一个应用场景 × 一个具体行动，尽量给出量化目标。';
+      '请设计 4 条课后主题任务。每条给：一个课上教的工具方法、一个让学员把方法用到自己岗位上的主题任务、两句「例如…」的启发提示（一句关于工作场景、一句关于行为）、一个指标方向。不要写死工作场景、具体行为或指标名，那是学员自己要定的。';
     $('aiNote').classList.remove('hidden'); $('aiNote').textContent = 'AI 起草中…';
     A.draftRows(prompt).then(function (rows) { applyDraft(rows, '已起草 ' + rows.length + ' 行，可继续编辑。'); })
       .catch(draftFail);
@@ -877,7 +913,7 @@
     $('aiNote').textContent = 'AI 正在从「' + fileName + '」提炼迁移表，约需十几秒…';
     var prompt = '课程主题：' + (($('cTheme').value.trim()) || c.theme || '') + '\n' +
       '目标：' + (($('cNeeds').value.trim()) || c.needs || '') + '\n' +
-      '下面是一份课程文件 / 课后行动要求的原始内容。请通读后，提炼出学员课后要真正用起来的迁移表：4-8 行，每行 = 一个掌握的新方法 × 一个应用场景 × 一个具体行动，尽量给出量化目标。只提炼与课后应用直接相关的内容。\n\n---\n' + text.slice(0, 8000) + '\n---';
+      '下面是一份课程文件 / 课后行动要求的原始内容。请通读后，提炼出 4 条课后主题任务。每条给：一个课上教的工具方法、一个主题任务、两句「例如…」的启发提示（场景 / 行为）、一个指标方向（efficiency/quality/cost/collab/growth）。严禁替学员写死工作场景、具体行为或指标名。只提炼与课后应用直接相关的内容。\n\n---\n' + text.slice(0, 8000) + '\n---';
     A.draftRows(prompt).then(function (rows) {
       applyDraft(rows, '已从「' + fileName + '」起草 ' + rows.length + ' 行，请核对并编辑。');
     }).catch(draftFail);

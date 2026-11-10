@@ -4,7 +4,27 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>Action Leap · 学员填写</title>
-<link rel="stylesheet" href="styles.css" />
+<link rel="stylesheet" href="styles.css?v=19" />
+<style>
+  .c2 { background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:18px 20px;margin:14px 0;box-shadow:var(--shadow-sm); }
+  .c2 .hd { display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:6px; }
+  .c2 .tt { font-size:16px;font-weight:800;letter-spacing:-.01em; }
+  .c2 .task { font-size:13px;color:var(--ink-soft);line-height:1.65;margin:6px 0 0; }
+  .c2 .sec { border-top:1px solid var(--line);margin-top:16px;padding-top:14px; }
+  .c2 .lb { font-size:11px;font-weight:800;letter-spacing:.08em;color:var(--primary-d);margin-bottom:10px; }
+  .c2 .lb.done { color:var(--indigo); }
+  .c2 label { display:block;font-size:13px;font-weight:600;margin:12px 0 5px;color:var(--ink); }
+  .c2 input,.c2 textarea { width:100%;font:inherit;padding:9px 12px;border:1px solid var(--line);border-radius:10px;background:var(--bg-soft);color:var(--ink); }
+  .c2 input:focus,.c2 textarea:focus { outline:2px solid rgba(255,122,77,.28);border-color:var(--primary); }
+  .c2 .hint { display:flex;gap:8px;align-items:flex-start;font-size:12px;color:var(--ink-faint);margin:5px 0 0;line-height:1.55; }
+  .c2 .hint span { flex:1; }
+  .c2 .hint button { flex:none;border:0;background:var(--indigo-soft);color:var(--indigo);font-size:11px;font-weight:700;border-radius:999px;padding:3px 10px;cursor:pointer; }
+  .c2 .nums { display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin-top:4px; }
+  .c2 .nums label { margin-top:2px; }
+  .c2 .old { font-size:13px;color:var(--ink-soft);margin-top:4px; }
+  .c2 .old b { color:var(--ink); }
+  @media (max-width:560px){ .c2 .nums { grid-template-columns:1fr; } .c2 { padding:16px; } }
+</style>
 </head>
 <body>
 <div class="topbar">
@@ -30,12 +50,14 @@
     </div>
 
     <div class="card">
-      <div class="eyebrow">怎么填（约 5 分钟）</div>
-      <p class="meta">这张表是从你上课的内容里抽出的「要真正用起来的行动」。每行只需补两栏：<b>结果影响</b> 和 <b>实际值</b>（有量化目标的才填实际值）。困难、未来应用可选填。全部填完才能提交；上司会据此给你反馈。</p>
+      <div class="eyebrow">怎么填（第一次约 3 分钟，之后每周 30 秒）</div>
+      <p class="meta">讲师只给<b>工具方法</b>和<b>主题任务</b>，旁边两句提示只是启发，可以改、也可以不用。</p>
+      <p class="meta">四张卡由你自己定：<b>① 在什么工作场景下　② 改善什么行为　③ 做成了什么　④ 改善哪个指标</b>（现在是多少 → 想变成多少 → 实际做到多少）。</p>
+      <p class="meta">先定下 ①②④，做完再回来补 ③ 和实际值。四张卡都填完才能提交；你的上司会先看到你定的方向。</p>
     </div>
 
     <div class="card">
-      <div class="eyebrow">我的迁移表</div>
+      <div class="eyebrow" id="cardsTitle">我的行动卡</div>
       <div id="fillBody"></div>
       <div id="fillErr" class="error"></div>
       <div style="display:flex;gap:10px;margin-top:14px;flex-wrap:wrap">
@@ -50,8 +72,8 @@
 <div class="toast" id="toast"></div>
 
 <script src="https://cdn.jsdelivr.net/npm/@tencent-ai/workbuddy-cloud-sdk@dev/lib/index.global.js"></script>
-<script src="publicConfig.js"></script>
-<script src="cloud-core.js"></script>
+<script src="publicConfig.js?v=19"></script>
+<script src="cloud-core.js?v=19"></script>
 <script>
 (function () {
   'use strict';
@@ -59,12 +81,10 @@
   if (typeof WorkBuddyCloud === 'undefined') { showErr('云服务 SDK 加载失败，请刷新重试。'); return; }
   A.init();
 
-  var BASE = location.origin + location.pathname.replace(/[^/]*$/, '');
   var q = new URLSearchParams(location.search);
   var pid = q.get('pid'), tok = q.get('tok');
-  var data = null;        // get_project_for_student 返回
-  var rows = [];          // 学员填写：{id, resultImpact, quantActual, difficulty, futureApplication}
-  var saved = null;       // 已存在的提交
+  var data = null;
+  var rows = [];          // 每张卡：新旧两种结构并存，见 buildRows
 
   function $(id) { return document.getElementById(id); }
   function showErr(m) { $('errMsg').textContent = m; $('view-err').classList.remove('hidden'); }
@@ -81,11 +101,19 @@
     $('view-main').classList.remove('hidden');
   }).catch(function (e) { showErr('加载失败：' + (e.message || e)); });
 
+  /* 新卡：四项由学员写，讲师只给 method / task / 两句提示 / 指标方向。
+   * 旧卡（两期测试数据）：保留讲师预设的场景与行动，学员仍只补结果与实际值。 */
   function buildRows() {
-    var fw = (data.framework || []);
-    rows = fw.map(function (a) {
-      return { id: a.id, section: a.section, scene: a.scene, action: a.action,
-        target: a.target, direction: a.direction, note: a.note,
+    rows = (data.framework || []).map(function (a) {
+      if (A.isNewRow(a)) {
+        return { id: a.id, v: 2, method: a.method || '', task: a.task || '',
+          hintScene: a.hintScene || '', hintBehavior: a.hintBehavior || '',
+          direction: a.direction || 'efficiency',
+          scene: '', behavior: '', metricName: '', unit: '', baseline: '', goal: '',
+          resultImpact: '', quantActual: '' };
+      }
+      return { id: a.id, section: a.section || '', scene: a.scene || '', action: a.action || '',
+        target: a.target || '', direction: a.direction || 'up', note: a.note || '',
         resultImpact: '', quantActual: '', difficulty: '', futureApplication: '' };
     });
   }
@@ -93,7 +121,16 @@
     if (!sub || !sub.rows) return;
     sub.rows.forEach(function (s) {
       var r = rows.find(function (x) { return x.id === s.id; });
-      if (r) { r.resultImpact = s.resultImpact || ''; r.quantActual = s.quantActual != null ? s.quantActual : ''; r.difficulty = s.difficulty || ''; r.futureApplication = s.futureApplication || ''; }
+      if (!r) return;
+      if (A.isNewRow(r)) {
+        ['scene', 'behavior', 'metricName', 'unit', 'baseline', 'goal', 'resultImpact', 'quantActual']
+          .forEach(function (f) { r[f] = s[f] != null ? s[f] : ''; });
+      } else {
+        r.resultImpact = s.resultImpact || '';
+        r.quantActual = s.quantActual != null ? s.quantActual : '';
+        r.difficulty = s.difficulty || '';
+        r.futureApplication = s.futureApplication || '';
+      }
     });
   }
 
@@ -102,8 +139,8 @@
     var info = A.phaseInfo({ schedule: schedule });
     if (!info) return;
     var HINTS = {
-      student: { fill: '现在该：填写你的迁移成果（补「结果影响 + 实际值」）', sup: '现在该：你的上司正在给反馈，可先安心推进工作', submit: '现在该：确认成果无误后正式提交', review: '现在该：等待讲师评价与案例评选' },
-      sup: { fill: '现在该：等待学员填写完成', sup: '现在该：给学员写三段式反馈（评语 / 建议 / 承诺跟进）', submit: '现在该：如还有补充可继续完善反馈', review: '现在该：等待讲师评价' }
+      student: { fill: '现在该：先定下自己的四张卡（场景 / 行为 / 指标）', sup: '现在该：上司正在看你定的方向，可先推进工作', submit: '现在该：补完「做成了什么」和实际值后正式提交', review: '现在该：等待讲师评价与案例评选' },
+      sup: { fill: '现在该：等待学员定卡并填写成果', sup: '现在该：给学员写三段式反馈（评语 / 建议 / 承诺跟进）', submit: '现在该：如还有补充可继续完善反馈', review: '现在该：等待讲师评价' }
     };
     $('timelineCard').classList.remove('hidden');
     var bar = $('timelineBar'); bar.innerHTML = '';
@@ -124,13 +161,71 @@
     }
   }
 
+  function field(i, f, tag, value, placeholder, extra) {
+    var v = A.esc(value == null ? '' : value);
+    if (tag === 'textarea') {
+      return '<textarea data-i="' + i + '" data-f="' + f + '" rows="2" placeholder="' + A.esc(placeholder) + '">' + v + '</textarea>';
+    }
+    return '<input data-i="' + i + '" data-f="' + f + '" value="' + v + '" placeholder="' + A.esc(placeholder) + '"' + (extra || '') + '>';
+  }
+  function hintRow(i, f, text) {
+    if (!text) return '';
+    return '<div class="hint"><span>提示：' + A.esc(text) + '</span>' +
+      '<button type="button" data-i="' + i + '" data-hint="' + f + '">用这句</button></div>';
+  }
+
+  function newCardHTML(r, i) {
+    var h = '<div class="hd"><span class="pill">第 ' + (i + 1) + ' 张卡 · ' + A.esc(A.directionLabel(r.direction)) + '</span>' +
+      '<span class="tt">' + A.esc(r.method || '工具方法') + '</span></div>' +
+      '<p class="task">主题任务：' + A.esc(r.task || '把这套方法用到你自己的岗位上') + '</p>';
+
+    h += '<div class="sec"><div class="lb">第 1 周 · 先定这张卡（约 3 分钟）</div>';
+    h += '<label>① 在什么工作场景下</label>';
+    h += field(i, 'scene', 'input', r.scene, '写你自己的真实工作场景，例如：每周二和供应链对齐交付计划');
+    h += hintRow(i, 'scene', r.hintScene);
+    h += '<label>② 改善什么行为</label>';
+    h += field(i, 'behavior', 'input', r.behavior, '你打算把原来的做法改成什么');
+    h += hintRow(i, 'behavior', r.hintBehavior);
+    h += '<label>④ 改善哪个指标</label>';
+    h += field(i, 'metricName', 'input', r.metricName, '例：跨部门方案定稿天数');
+    h += '<div class="nums">' +
+      '<div><label>现在是多少</label>' + field(i, 'baseline', 'input', r.baseline, '12', ' inputmode="decimal"') + '</div>' +
+      '<div><label>想变成多少</label>' + field(i, 'goal', 'input', r.goal, '8', ' inputmode="decimal"') + '</div>' +
+      '<div><label>单位（可选）</label>' + field(i, 'unit', 'input', r.unit, '天 / % / 次') + '</div>' +
+      '</div></div>';
+
+    h += '<div class="sec"><div class="lb done">做完再回来补 · 30 秒</div>';
+    h += '<label>③ 做成了什么</label>';
+    h += field(i, 'resultImpact', 'textarea', r.resultImpact, '一两句话说清楚结果；做不成也照实写卡在哪');
+    h += '<label>实际值</label>';
+    h += field(i, 'quantActual', 'input', r.quantActual, '填数字', ' inputmode="decimal"');
+    h += '</div>';
+    return h;
+  }
+
+  function legacyCardHTML(r, i) {
+    var quantified = r.target !== '' && r.target != null;
+    var h = '<div class="hd"><span class="pill">第 ' + (i + 1) + ' 行 · 旧版</span>' +
+      '<span class="tt">' + A.esc(r.section || '行动') + '</span></div>' +
+      '<p class="task">' + A.esc(r.action || '') + '</p>' +
+      '<div class="old">场景：' + A.esc(r.scene || '—') + '</div>';
+    if (quantified) h += '<div class="old">量化目标：<b>' + A.esc(r.target) + '</b>' + (r.note ? ' · ' + A.esc(r.note) : '') + '</div>';
+    h += '<div class="sec"><div class="lb done">填写成果</div>';
+    h += '<label>结果影响</label>' + field(i, 'resultImpact', 'textarea', r.resultImpact, '用一两句话说清楚结果与影响');
+    if (quantified) h += '<label>实际值</label>' + field(i, 'quantActual', 'input', r.quantActual, '目标 ' + (r.target || ''), ' inputmode="decimal"');
+    h += '<label>遇到的困难（可选）</label>' + field(i, 'difficulty', 'textarea', r.difficulty, '执行中卡在哪？');
+    h += '<label>未来怎么继续用（可选）</label>' + field(i, 'futureApplication', 'textarea', r.futureApplication, '下次还会怎么用？');
+    h += '</div>';
+    return h;
+  }
+
   function render() {
     $('hClient').textContent = (data.project.client || '') + ' · ' + (data.project.cohort || '');
     $('hTitle').textContent = data.project.title || '课后迁移表';
     $('hStudent').textContent = '学员：' + (data.student.name || '');
     renderTimeline(data.project.schedule, 'student');
+    $('cardsTitle').textContent = '我的 ' + rows.length + ' 张行动卡';
 
-    // 若此前已提交，展示已提交态（仍可编辑后重新提交更新）
     var done = data.submission && data.submission.completed;
     if (done) {
       $('doneBox').classList.remove('hidden');
@@ -138,30 +233,31 @@
     }
     var body = $('fillBody'); body.innerHTML = '';
     rows.forEach(function (r, i) {
-      var quantified = r.target !== '' && r.target != null;
-      var card = document.createElement('div'); card.className = 'fb';
-      var html = '<div class="who"><span class="pill">' + A.esc(r.section || '行动') + '</span> &nbsp;' + A.esc(r.action || '') + '</div>';
-      html += '<div class="meta">场景：' + A.esc(r.scene || '—') + '</div>';
-      if (quantified) {
-        html += '<div class="meta" style="margin-top:4px">量化目标：<b>' + A.esc(r.target) + '</b>' + (r.note ? ' · ' + A.esc(r.note) : '') + '（' + (r.direction === 'down' ? '越低越好' : '越高越好') + '）</div>';
-      }
-      html += '<label>结果影响（这一行你实际做到了什么 / 带来了什么改变？）</label>';
-      html += '<textarea data-i="' + i + '" data-f="resultImpact" rows="2" placeholder="用一两句话说清楚结果与影响">' + A.esc(r.resultImpact) + '</textarea>';
-      if (quantified) {
-        html += '<label>实际值（填数字）</label>';
-        html += '<input type="text" inputmode="decimal" data-i="' + i + '" data-f="quantActual" value="' + A.esc(r.quantActual) + '" placeholder="目标 ' + A.esc(r.target) + '">';
-      }
-      html += '<label>遇到的困难（可选）</label>';
-      html += '<textarea data-i="' + i + '" data-f="difficulty" rows="1" placeholder="执行中卡在哪？">' + A.esc(r.difficulty) + '</textarea>';
-      html += '<label>未来怎么继续用（可选）</label>';
-      html += '<textarea data-i="' + i + '" data-f="futureApplication" rows="1" placeholder="下次还会怎么用？">' + A.esc(r.futureApplication) + '</textarea>';
-      card.innerHTML = html;
+      var card = document.createElement('div');
+      card.className = 'c2';
+      card.innerHTML = A.isNewRow(r) ? newCardHTML(r, i) : legacyCardHTML(r, i);
       body.appendChild(card);
     });
-    body.querySelectorAll('textarea,input').forEach(function (inp) {
+    bindInputs(body);
+  }
+
+  function bindInputs(body) {
+    body.querySelectorAll('input[data-f],textarea[data-f]').forEach(function (inp) {
       inp.addEventListener('input', function () {
         var i = +inp.getAttribute('data-i'), f = inp.getAttribute('data-f');
         rows[i][f] = inp.value;
+        $('fillErr').textContent = '';
+      });
+    });
+    /* 「用这句」只是把提示带进输入框，随时可改；默认留空，避免学员照抄讲师的答案 */
+    body.querySelectorAll('[data-hint]').forEach(function (b) {
+      b.addEventListener('click', function () {
+        var i = +b.getAttribute('data-i'), f = b.getAttribute('data-hint');
+        var src = (f === 'scene') ? rows[i].hintScene : rows[i].hintBehavior;
+        if (!src) return;
+        rows[i][f] = String(src).replace(/^例如\s*[:：]?\s*/, '');
+        var inp = body.querySelector('[data-i="' + i + '"][data-f="' + f + '"]');
+        if (inp) inp.value = rows[i][f];
         $('fillErr').textContent = '';
       });
     });
@@ -170,16 +266,23 @@
   function isComplete() {
     var ok = true;
     rows.forEach(function (r) {
-      if ((r.resultImpact || '').trim() === '') ok = false;
-      var q = r.target !== '' && r.target != null;
-      if (q && (r.quantActual === '' || r.quantActual == null)) ok = false;
+      if (A.isNewRow(r)) {
+        ['scene', 'behavior', 'metricName', 'baseline', 'goal', 'resultImpact', 'quantActual']
+          .forEach(function (f) { if (String(r[f] == null ? '' : r[f]).trim() === '') ok = false; });
+      } else {
+        if ((r.resultImpact || '').trim() === '') ok = false;
+        if (r.target !== '' && r.target != null && (r.quantActual === '' || r.quantActual == null)) ok = false;
+      }
     });
     return ok;
   }
 
   $('btnSave').addEventListener('click', function () { submit(false); });
   $('btnSubmit').addEventListener('click', function () {
-    if (!isComplete()) { $('fillErr').textContent = '请先填完每一行的「结果影响」，以及有量化目标行的「实际值」。'; return; }
+    if (!isComplete()) {
+      $('fillErr').textContent = '每张卡都要填齐：工作场景、改善什么行为、指标（现在→想变成）、做成了什么和实际值。还没做完的可以先点「保存草稿」。';
+      return;
+    }
     submit(true);
   });
 
@@ -188,7 +291,7 @@
       if (!r || !r.ok) { toast('保存失败：' + ((r && r.error) || '未知')); return; }
       if (completed) {
         $('doneBox').classList.remove('hidden');
-        $('doneBox').innerHTML = '✅ 已提交！你的直接上司会收到反馈邀请，讲师将在工作台看到你的迁移成果。感谢你的投入。';
+        $('doneBox').innerHTML = '✅ 已提交！你的直接上司会看到你定的四张卡与成果，讲师将在工作台看到完整迁移记录。感谢你的投入。';
         $('btnSubmit').disabled = true; $('btnSave').disabled = true;
         toast('提交成功');
       } else { toast('草稿已保存'); }

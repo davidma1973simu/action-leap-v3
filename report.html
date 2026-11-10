@@ -4,7 +4,7 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>Action Leap · 汇总报表</title>
-<link rel="stylesheet" href="styles.css" />
+<link rel="stylesheet" href="styles.css?v=19" />
 <style>
   @media print {
     .no-print { display: none !important; }
@@ -68,9 +68,9 @@
 <div class="toast" id="toast"></div>
 
 <script src="https://cdn.jsdelivr.net/npm/@tencent-ai/workbuddy-cloud-sdk@dev/lib/index.global.js"></script>
-<script src="publicConfig.js"></script>
-<script src="cloud-core.js"></script>
-<script src="comments.js"></script>
+<script src="publicConfig.js?v=19"></script>
+<script src="cloud-core.js?v=19"></script>
+<script src="comments.js?v=19"></script>
 <script>
 (function () {
   'use strict';
@@ -143,16 +143,17 @@
   }
   function index(arr) { var m = {}; (arr || []).forEach(function (x) { m[x.student_token] = x; }); return m; }
 
-  function quantRate(sub) {
+  /* 只数卡，不把不同口径的指标加总成一个「全班达成率」 */
+  function cardCounts(sub) {
     if (!sub || !sub.rows) return null;
-    var total = 0, met = 0;
+    var total = 0, defined = 0, filled = 0;
     sub.rows.forEach(function (r) {
-      if (r.target === '' || r.target == null) return;
       total++;
-      var t = parseFloat(r.target), a = parseFloat(r.quantActual);
-      if (!isNaN(t) && !isNaN(a)) { if ((r.direction === 'down') ? (a <= t) : (a >= t)) met++; }
+      if (A.isNewRow(r)) { if (r.scene && r.behavior && r.metricName) defined++; }
+      else defined++;
+      if (r.resultImpact) filled++;
     });
-    return total ? Math.round(met / total * 100) : null;
+    return total ? (defined + ' 定 / ' + filled + ' 填') : null;
   }
 
   function render() {
@@ -174,33 +175,77 @@
     h += '<div><b>主题：</b>' + A.esc(c.theme || '—') + '</div>';
     h += '<div style="margin-top:6px"><b>目标 / 待解决的业务问题：</b>' + A.esc(c.needs || '—') + '</div></div>';
 
-    /* 二、迁移表 */
-    h += '<div class="rsec"><h2><span class="n">2</span>迁移表（框架）</h2>';
+    /* 二、工具方法与主题任务（框架）：旧项目仍按老七列呈现 */
+    h += '<div class="rsec"><h2><span class="n">2</span>工具方法与主题任务（框架）</h2>';
     if (fw.length) {
-      h += '<table class="rgrid"><thead><tr><th>#</th><th>掌握新方法</th><th>应用场景</th><th>具体行动</th><th>目标 / 方向</th><th>改善的绩效指标</th></tr></thead><tbody>';
-      fw.forEach(function (r, i) {
-        var q = r.target !== '' && r.target != null;
-        h += '<tr><td>' + (i + 1) + '</td><td>' + A.esc(r.section || '') + '</td><td>' + A.esc(r.scene || '') + '</td><td>' + A.esc(r.action || '') + '</td>' +
-             '<td>' + (q ? A.esc(r.target) + '（' + (r.direction === 'down' ? '↓' : '↑') + '）' : '—') + '</td><td>' + A.esc(r.note || '') + '</td></tr>';
+      var legacyFw = fw.every(function (r) { return !A.isNewRow(r); });
+      if (legacyFw) {
+        h += '<table class="rgrid"><thead><tr><th>#</th><th>掌握新方法</th><th>应用场景</th><th>具体行动</th><th>目标 / 方向</th><th>改善的绩效指标</th></tr></thead><tbody>';
+        fw.forEach(function (r, i) {
+          var q = r.target !== '' && r.target != null;
+          h += '<tr><td>' + (i + 1) + '</td><td>' + A.esc(r.section || '') + '</td><td>' + A.esc(r.scene || '') + '</td><td>' + A.esc(r.action || '') + '</td>' +
+               '<td>' + (q ? A.esc(r.target) + '（' + (r.direction === 'down' ? '↓' : '↑') + '）' : '—') + '</td><td>' + A.esc(r.note || '') + '</td></tr>';
+        });
+        h += '</tbody></table>';
+      } else {
+        h += '<table class="rgrid"><thead><tr><th>#</th><th>工具方法</th><th>主题任务</th><th>场景提示</th><th>行为提示</th><th>指标方向</th></tr></thead><tbody>';
+        fw.forEach(function (r, i) {
+          h += '<tr><td>' + (i + 1) + '</td><td>' + A.esc(r.method || r.section || '') + '</td><td>' + A.esc(r.task || r.action || '') + '</td>' +
+               '<td>' + A.esc(r.hintScene || '—') + '</td><td>' + A.esc(r.hintBehavior || '—') + '</td>' +
+               '<td>' + (A.isNewRow(r) ? A.esc(A.directionLabel(r.direction)) : '—') + '</td></tr>';
+        });
+        h += '</tbody></table>';
+      }
+    } else h += '<div class="r-meta">（未定义主题任务）</div>';
+    h += '</div>';
+
+    /* 三、按指标方向分组：每张卡只与自己设的目标比，不设全班统一指标 */
+    h += '<div class="rsec"><h2><span class="n">3</span>按指标方向看改善</h2>';
+    var groups = {}, anyCard = false;
+    students.forEach(function (st) {
+      var sub = state.subs[st.token]; if (!sub || !sub.rows) return;
+      sub.rows.forEach(function (r) {
+        if (!A.isNewRow(r)) return;
+        anyCard = true;
+        var k = r.direction || 'other';
+        (groups[k] = groups[k] || []).push({ name: st.name, r: r });
       });
-      h += '</tbody></table>';
-    } else h += '<div class="r-meta">（未定义迁移表）</div>';
+    });
+    if (!anyCard) {
+      h += '<div class="r-meta">（本期暂无学员自定的行动卡。旧版项目按原报表口径查看。）</div>';
+    } else {
+      A.DIRECTIONS.concat([{ k: 'other', name: '未分类', hint: '未指定方向' }]).forEach(function (d) {
+        var list = groups[d.k] || [];
+        if (!list.length) return;
+        h += '<div class="eyebrow" style="margin:12px 0 6px">' + A.esc(d.name) + ' · ' + list.length + ' 张卡 <span class="r-meta">（' + A.esc(d.hint) + '）</span></div>';
+        h += '<table class="rgrid"><thead><tr><th>学员</th><th>工作场景</th><th>改善什么行为</th><th>自己的指标</th><th>现在 → 目标 → 实际</th><th>达到自己目标</th></tr></thead><tbody>';
+        list.forEach(function (x) {
+          var r = x.r, ach = A.cardAchieved(r);
+          h += '<tr><td>' + A.esc(x.name) + '</td><td>' + A.esc(r.scene || '—') + '</td><td>' + A.esc(r.behavior || '—') + '</td>' +
+               '<td>' + A.esc(r.metricName || '—') + '</td>' +
+               '<td>' + A.esc(r.baseline || '—') + ' → ' + A.esc(r.goal || '—') + ' → <b>' + A.esc(r.quantActual || '—') + '</b>' + (r.unit ? ' ' + A.esc(r.unit) : '') + '</td>' +
+               '<td>' + (ach === null ? '—' : (ach ? '是' : '否')) + '</td></tr>';
+        });
+        h += '</tbody></table>';
+      });
+      h += '<div class="r-meta" style="margin-top:10px">指标由学员自己定，只与自己设的目标比较。这里按方向归类呈现，不把不同口径的数字相加，也不出全班总指标。</div>';
+    }
     h += '</div>';
 
     /* 三、完成情况 */
-    h += '<div class="rsec"><h2><span class="n">3</span>完成情况</h2>';
-    h += '<table class="rgrid"><thead><tr><th>学员</th><th>上司</th><th>提交</th><th>上司反馈</th><th>量化达成率</th></tr></thead><tbody>';
+    h += '<div class="rsec"><h2><span class="n">4</span>完成情况</h2>';
+    h += '<table class="rgrid"><thead><tr><th>学员</th><th>上司</th><th>提交</th><th>上司反馈</th><th>行动卡（已定 / 已回填）</th></tr></thead><tbody>';
     students.forEach(function (s) {
-      var sub = state.subs[s.token], fb = state.fb[s.token], rate = quantRate(sub);
+      var sub = state.subs[s.token], fb = state.fb[s.token], counts = cardCounts(sub);
       h += '<tr><td>' + A.esc(s.name) + '</td><td>' + A.esc(s.supName || '—') + '</td>' +
            '<td>' + (sub ? '✅ 已提交' : '⬜ 未提交') + '</td>' +
            '<td>' + (fb ? '✅ 已反馈' : '⬜ 待反馈') + '</td>' +
-           '<td>' + (rate == null ? '—' : rate + '%') + '</td></tr>';
+           '<td>' + (counts == null ? '—' : counts) + '</td></tr>';
     });
     h += '</tbody></table></div>';
 
     /* 四、反馈情况 */
-    h += '<div class="rsec"><h2><span class="n">4</span>上司反馈情况</h2>';
+    h += '<div class="rsec"><h2><span class="n">5</span>上司反馈情况</h2>';
     var anyFb = students.some(function (s) { return state.fb[s.token]; });
     if (!anyFb) h += '<div class="r-meta">（暂无上司反馈）</div>';
     students.forEach(function (s) {
@@ -216,7 +261,7 @@
     /* 五、评级分类 */
     var ratings = { A: [], B: [], C: [] };
     students.forEach(function (s) { var rev = state.reviews[s.token]; if (rev && rev.rating) ratings[rev.rating].push(s.name); });
-    h += '<div class="rsec"><h2><span class="n">5</span>评级分类</h2>';
+    h += '<div class="rsec"><h2><span class="n">6</span>评级分类</h2>';
     h += '<div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:8px">';
     ['A', 'B', 'C'].forEach(function (k) {
       h += '<span class="rbadge pill' + k + '">' + k + ' 类 ' + ratings[k].length + ' 人</span>';
@@ -229,7 +274,7 @@
     h += '</div>';
 
     /* 六、范例知识与复盘萃取 */
-    h += '<div class="rsec"><h2><span class="n">6</span>范例知识与复盘萃取</h2>';
+    h += '<div class="rsec"><h2><span class="n">7</span>范例知识与复盘萃取</h2>';
     var exList = [];
     students.forEach(function (s) {
       var rev = state.reviews[s.token];
@@ -238,9 +283,10 @@
     if (!exList.length) h += '<div class="r-meta">（本期未勾选范例）</div>';
     else {
       h += '<div class="eyebrow" style="margin-bottom:6px">优秀范例</div>';
-      h += '<table class="rgrid"><thead><tr><th>学员</th><th>新方法</th><th>行动</th><th>结果影响</th></tr></thead><tbody>';
+      h += '<table class="rgrid"><thead><tr><th>学员</th><th>工具方法 / 主题任务</th><th>学员的工作场景</th><th>做成了什么</th></tr></thead><tbody>';
       exList.forEach(function (e) {
-        h += '<tr><td>' + A.esc(e.student || '') + '</td><td>' + A.esc(e.section || '') + '</td><td>' + A.esc(e.action || '') + '</td><td>' + A.esc(e.resultImpact || '') + '</td></tr>';
+        h += '<tr><td>' + A.esc(e.student || '') + '</td><td>' + A.esc(e.method || e.section || '') + (e.task ? ' · ' + A.esc(e.task) : '') + '</td>' +
+             '<td>' + A.esc(e.scene || '—') + (e.behavior ? ' / ' + A.esc(e.behavior) : '') + '</td><td>' + A.esc(e.resultImpact || '') + '</td></tr>';
       });
       h += '</tbody></table>';
     }
@@ -285,17 +331,17 @@
   $('btnDownloadHtml').addEventListener('click', function () {
     var title = (state.project && state.project.title) || '迁移报表';
     var full = '<!DOCTYPE html><html lang="zh-CN"><head><meta charset="UTF-8"><title>' + title + '</title>' +
-      '<link rel="stylesheet" href="styles.css"></head><body><div class="wrap">' + REPORT_HTML + '</div></body></html>';
+      '<link rel="stylesheet" href="styles.css?v=19"></head><body><div class="wrap">' + REPORT_HTML + '</div></body></html>';
     var blob = new Blob([full], { type: 'text/html;charset=utf-8' });
     downloadBlob(blob, '学习迁移汇总报表_' + (new Date().toISOString().slice(0, 10)) + '.html');
     toast('已下载 HTML 报表');
   });
   $('btnDownloadCsv').addEventListener('click', function () {
     var students = (state.project.students || []);
-    var rows = [['学员', '上司', '已提交', '上司已反馈', '量化达成率', '评级', '讲师评语']];
+    var rows = [['学员', '上司', '已提交', '上司已反馈', '行动卡（已定/已回填）', '评级', '讲师评语']];
     students.forEach(function (s) {
-      var sub = state.subs[s.token], fb = state.fb[s.token], rev = state.reviews[s.token], rate = quantRate(sub);
-      rows.push([s.name, s.supName || '', sub ? '是' : '否', fb ? '是' : '否', rate == null ? '' : rate + '%', rev ? rev.rating : '', rev ? rev.comment : '']);
+      var sub = state.subs[s.token], fb = state.fb[s.token], rev = state.reviews[s.token], counts = cardCounts(sub);
+      rows.push([s.name, s.supName || '', sub ? '是' : '否', fb ? '是' : '否', counts == null ? '' : counts, rev ? rev.rating : '', rev ? rev.comment : '']);
     });
     var csv = '﻿' + rows.map(function (r) { return r.map(function (c) { return '"' + String(c == null ? '' : c).replace(/"/g, '""') + '"'; }).join(','); }).join('\r\n');
     downloadBlob(new Blob([csv], { type: 'text/csv;charset=utf-8' }), '学习迁移汇总_' + (new Date().toISOString().slice(0, 10)) + '.csv');

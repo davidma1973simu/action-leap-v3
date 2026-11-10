@@ -4,7 +4,7 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>Action Leap · 评价固化（创建者）</title>
-<link rel="stylesheet" href="styles.css" />
+<link rel="stylesheet" href="styles.css?v=19" />
 </head>
 <body>
 
@@ -79,9 +79,9 @@
 <div class="toast" id="toast"></div>
 
 <script src="https://cdn.jsdelivr.net/npm/@tencent-ai/workbuddy-cloud-sdk@dev/lib/index.global.js"></script>
-<script src="publicConfig.js"></script>
-<script src="cloud-core.js"></script>
-<script src="comments.js"></script>
+<script src="publicConfig.js?v=19"></script>
+<script src="cloud-core.js?v=19"></script>
+<script src="comments.js?v=19"></script>
 <script>
 (function () {
   'use strict';
@@ -202,26 +202,17 @@
     var students = (state.project.students || []);
     var submitted = students.filter(function (s) { return state.subs[s.token]; }).length;
     var fbCount = students.filter(function (s) { return state.fb[s.token]; }).length;
-    // 量化达成率
-    var totalQ = 0, metQ = 0;
+    // 只数卡，不设全班统一指标（每个学员的指标由他自己定）
+    var totalCards = 0, filledCards = 0;
     students.forEach(function (s) {
       var sub = state.subs[s.token]; if (!sub || !sub.rows) return;
-      sub.rows.forEach(function (r) {
-        if (r.target === '' || r.target == null) return;
-        totalQ++;
-        var t = parseFloat(r.target), a = parseFloat(r.quantActual);
-        if (!isNaN(t) && !isNaN(a)) {
-          var met = (r.direction === 'down') ? (a <= t) : (a >= t);
-          if (met) metQ++;
-        }
-      });
+      sub.rows.forEach(function (r) { totalCards++; if (r.resultImpact) filledCards++; });
     });
-    var rate = totalQ ? Math.round(metQ / totalQ * 100) : null;
     var stats = [
       { n: students.length, l: '学员总数' },
       { n: submitted + ' / ' + students.length, l: '已提交迁移' },
       { n: fbCount + ' / ' + students.length, l: '上司已反馈' },
-      { n: rate == null ? '—' : rate + '%', l: '量化目标达成率' }
+      { n: filledCards + ' / ' + totalCards, l: '已回填行动卡' }
     ];
     $('stats').innerHTML = stats.map(function (s) {
       return '<div class="card" style="margin:0;text-align:center"><div style="font-size:26px;font-weight:800;color:var(--primary-d)">' + s.n + '</div><div class="meta">' + s.l + '</div></div>';
@@ -249,14 +240,28 @@
       if (sub && sub.rows && sub.rows.length) {
         html += '<div class="eyebrow" style="margin-top:14px">学员迁移成果</div>';
         sub.rows.forEach(function (r) {
-          var quantified = r.target !== '' && r.target != null;
-          html += '<div class="fb"><div class="who"><span class="pill">' + A.esc(r.section || '行动') + '</span> &nbsp;' + A.esc(r.action || '') + '</div>';
-          html += '<div class="meta">场景：' + A.esc(r.scene || '—') + '</div>';
-          html += '<div style="margin-top:6px"><b>结果影响：</b>' + A.esc(r.resultImpact || '（未填写）') + '</div>';
-          if (quantified) html += '<div class="meta">目标 ' + A.esc(r.target) + ' · 实际 <b>' + A.esc(r.quantActual != null ? r.quantActual : '—') + '</b></div>';
-          if (r.difficulty) html += '<div class="meta">困难：' + A.esc(r.difficulty) + '</div>';
-          if (r.futureApplication) html += '<div class="meta">未来应用：' + A.esc(r.futureApplication) + '</div>';
-          html += '</div>';
+          if (A.isNewRow(r)) {
+            html += '<div class="fb"><div class="who"><span class="pill">' + A.esc(A.directionLabel(r.direction)) + '</span> &nbsp;' + A.esc(r.method || '工具方法') + '</div>';
+            html += '<div class="meta">主题任务：' + A.esc(r.task || '—') + '</div>';
+            html += '<div style="margin-top:6px"><b>① 工作场景：</b>' + A.esc(r.scene || '—') + '</div>';
+            html += '<div><b>② 改善什么行为：</b>' + A.esc(r.behavior || '—') + '</div>';
+            html += '<div><b>④ 改善哪个指标：</b>' + A.esc(r.metricName || '—') + ' · ' +
+              A.esc(r.baseline || '—') + ' → ' + A.esc(r.goal || '—') + ' → <b>' + A.esc(r.quantActual || '—') + '</b>' +
+              (r.unit ? ' ' + A.esc(r.unit) : '') + '</div>';
+            html += '<div style="margin-top:6px"><b>③ 做成了什么：</b>' + A.esc(r.resultImpact || '（未填写）') + '</div>';
+            var ach = A.cardAchieved(r);
+            if (ach !== null) html += '<div class="meta">' + (ach ? '达到自己设的目标' : '未达到自己设的目标') + '</div>';
+            html += '</div>';
+          } else {
+            var quantified = r.target !== '' && r.target != null;
+            html += '<div class="fb"><div class="who"><span class="pill">' + A.esc(r.section || '行动') + '</span> &nbsp;' + A.esc(r.action || '') + '</div>';
+            html += '<div class="meta">场景：' + A.esc(r.scene || '—') + '</div>';
+            html += '<div style="margin-top:6px"><b>结果影响：</b>' + A.esc(r.resultImpact || '（未填写）') + '</div>';
+            if (quantified) html += '<div class="meta">目标 ' + A.esc(r.target) + ' · 实际 <b>' + A.esc(r.quantActual != null ? r.quantActual : '—') + '</b></div>';
+            if (r.difficulty) html += '<div class="meta">困难：' + A.esc(r.difficulty) + '</div>';
+            if (r.futureApplication) html += '<div class="meta">未来应用：' + A.esc(r.futureApplication) + '</div>';
+            html += '</div>';
+          }
         });
       } else {
         html += '<div class="note" style="margin-top:14px">学员尚未提交迁移表。</div>';
@@ -304,7 +309,7 @@
     var ex = exemplar || [];
     box.innerHTML = sub.rows.map(function (r, i) {
       var checked = ex.some(function (e) { return e.id === r.id; }) ? 'checked' : '';
-      return '<label style="display:flex;gap:8px;align-items:flex-start;margin:4px 0;font-weight:500"><input type="checkbox" data-exi="' + i + '" ' + checked + (ro ? ' disabled' : '') + ' style="width:auto;margin-top:6px"> <span>选为范例：<b>' + A.esc(r.action || '') + '</b> — ' + A.esc((r.resultImpact || '').slice(0, 40)) + '</span></label>';
+      return '<label style="display:flex;gap:8px;align-items:flex-start;margin:4px 0;font-weight:500"><input type="checkbox" data-exi="' + i + '" ' + checked + (ro ? ' disabled' : '') + ' style="width:auto;margin-top:6px"> <span>选为范例：<b>' + A.esc(r.task || r.action || r.scene || '行动卡') + '</b> — ' + A.esc((r.resultImpact || '').slice(0, 40)) + '</span></label>';
     }).join('');
     box.querySelectorAll('input[data-exi]').forEach(function (cb) {
       cb.addEventListener('change', function () {
@@ -316,7 +321,12 @@
       });
     });
   }
-  function rowToExemplar(r) { return { id: r.id, section: r.section, action: r.action, scene: r.scene, resultImpact: r.resultImpact, quantActual: r.quantActual, target: r.target }; }
+  function rowToExemplar(r) {
+    return { id: r.id, v: r.v, section: r.section, action: r.action, scene: r.scene,
+      resultImpact: r.resultImpact, quantActual: r.quantActual, target: r.target,
+      method: r.method, task: r.task, behavior: r.behavior, metricName: r.metricName,
+      unit: r.unit, baseline: r.baseline, goal: r.goal, direction: r.direction };
+  }
   function getCurrentEx(token, sub) {
     var rev = state.reviews[token];
     if (rev && rev.exemplar) return rev.exemplar;
@@ -354,10 +364,12 @@
     if (!exArr.length) { toast('请先勾选至少一条范例'); return; }
     var courseId = state.project.course_id;
     var stName = (state.project.students.find(function (s) { return s.token === token; }) || {}).name || '学员';
-    /* 一次写入整批，core 里按「方法+场景+行动」去重：同一条范例重复固化只更新内容，不堆重复卡片 */
+    /* 一次写入整批，core 里按「学员自定场景+行为+主题任务」去重：同一条范例重复固化只更新内容，不堆重复卡片 */
     var list = exArr.map(function (e) {
-      return { id: A.uid('t'), section: e.section, action: e.action, scene: e.scene,
+      return { id: A.uid('t'), v: e.v, section: e.section, action: e.action, scene: e.scene,
         resultImpact: e.resultImpact, quantActual: e.quantActual, target: e.target,
+        method: e.method, task: e.task, behavior: e.behavior, metricName: e.metricName,
+        unit: e.unit, baseline: e.baseline, goal: e.goal, direction: e.direction,
         source: stName, createdAt: new Date().toISOString() };
     });
     A.appendTemplates(courseId, list).then(function () {
@@ -387,7 +399,8 @@
       var found = knowledge.find(function (k) { return k.id === e.id; }) || {};
       var row = document.createElement('div'); row.className = 'fb';
       row.innerHTML =
-        '<div class="who"><span class="pill">' + A.esc(e.section || '范例') + '</span> &nbsp;' + A.esc(e.action || '') + '</div>' +
+        '<div class="who"><span class="pill">' + A.esc(e.method || e.section || '范例') + '</span> &nbsp;' + A.esc(e.task || e.action || '') + '</div>' +
+        '<div class="meta">学员的工作场景：' + A.esc(e.scene || '—') + (e.behavior ? ' · ' + A.esc(e.behavior) : '') + '</div>' +
         '<div class="meta">学员：' + A.esc(e.student || '') + (e.resultImpact ? ' · ' + A.esc((e.resultImpact || '').slice(0, 40)) : '') + '</div>' +
         '<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px">' +
           '<div style="flex:1;min-width:150px"><label style="font-size:12px">后继跟进时间点</label><input type="date" data-i="' + i + '" data-f="followUp" value="' + A.esc(found.followUp || '') + '"></div>' +
@@ -403,6 +416,7 @@
     var knowledge = ex.map(function (e, i) {
       return {
         id: e.id, section: e.section, action: e.action, scene: e.scene, resultImpact: e.resultImpact, student: e.student,
+        method: e.method, task: e.task, behavior: e.behavior, metricName: e.metricName, baseline: e.baseline, goal: e.goal,
         followUp: (document.querySelector('[data-i="' + i + '"][data-f="followUp"]') || {}).value || '',
         owner: (document.querySelector('[data-i="' + i + '"][data-f="owner"]') || {}).value || '',
         note: (document.querySelector('[data-i="' + i + '"][data-f="note"]') || {}).value || ''
