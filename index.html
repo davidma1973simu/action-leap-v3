@@ -50,6 +50,27 @@
       <div class="spacer"></div>
       <button class="btn sm" id="btnNewCourse">+ 新建课程</button>
     </div>
+
+    <div class="ro-banner hidden" id="noAdminBanner">
+      你的账号不是这个应用的管理员，只能看被邀请为协作人的内容（只读）
+      <span class="meta">管理员邮箱只有一个。你可以查看课程与项目、在任意位置留建议；建课程、建项目、做评价只有管理员能做。</span>
+    </div>
+
+    <div class="card hidden" id="adminCard" style="margin-bottom:14px">
+      <div style="display:flex;align-items:center;gap:10px">
+        <div class="eyebrow" style="margin:0">管理员（本应用只有一个）</div>
+        <div class="spacer"></div>
+        <button class="btn ghost sm" id="btnTransferToggle">移交管理权限</button>
+      </div>
+      <p class="meta">当前管理员：<b id="adminEmailShow">—</b>。只有管理员能建课程、派发项目、做评价与导出报表；其他人即便拿到应用地址并成功登录，也只有被邀请后的只读权限。</p>
+      <div id="transferPanel" class="hidden" style="margin-top:10px;padding:12px;border:1px dashed var(--line);border-radius:10px">
+        <label>新管理员邮箱</label>
+        <input type="email" id="newAdminEmail" placeholder="new-admin@company.com" />
+        <p class="meta">对方必须先用这个邮箱收验证码登录过一次本应用（首次登录会提示无管理权限），系统才认得出这个账号。移交后：全部课程与项目转给他，你的账号降为普通协作人。</p>
+        <div style="margin-top:10px;display:flex;gap:8px"><button class="btn sm" id="btnTransfer">确认移交</button><button class="btn ghost sm" id="btnTransferCancel">取消</button></div>
+      </div>
+      <div id="adminErr" class="error"></div>
+    </div>
     <div id="courseList" class="grid cols-2"></div>
     <div id="courseEmpty" class="empty hidden">还没有课程。点「新建课程」定义你的第一张通用迁移表。</div>
   </section>
@@ -261,7 +282,8 @@
 
   var BASE = location.origin + location.pathname.replace(/[^/]*$/, '');
   var state = { course: null, projectId: null, rows: [], pfw: [], collab: [], roster: [],
-    schedule: null, me: { uid: '', email: '' }, isOwner: true };
+    editingTpl: null,
+    schedule: null, me: { uid: '', email: '' }, isOwner: true, isAdmin: false };
 
   function $(id) { return document.getElementById(id); }
   function show(view) {
@@ -316,10 +338,45 @@
     show('dashboard');
     A.whoami().then(function (me) {
       state.me = { uid: (me && me.uid) || '', email: (me && me.email) || user.email || '' };
+      applyAdminGate(me);
       loadCourses();
     }).catch(function () {
       state.me = { uid: '', email: user.email || '' };
+      applyAdminGate(null);
       loadCourses();
+    });
+  }
+
+  /* ---------------- 管理员闸门：一个应用只有一个管理员邮箱 ----------------
+   * 数据库层（is_app_admin）才是真闸门，这里只负责把状态摆到界面上：
+   * 非管理员看不到「新建课程」，进去的任何课程都是只读 + 可批注。
+   * ------------------------------------------------------------------ */
+  function applyAdminGate(me) {
+    var isAdmin = !!(me && me.isAdmin);
+    state.isAdmin = isAdmin;
+    $('adminCard').classList.toggle('hidden', !isAdmin);
+    $('noAdminBanner').classList.toggle('hidden', isAdmin);
+    $('btnNewCourse').classList.toggle('hidden', !isAdmin);
+    if (isAdmin && me && me.adminEmail) $('adminEmailShow').textContent = me.adminEmail;
+  }
+  if ($('btnTransferToggle')) {
+    $('btnTransferToggle').addEventListener('click', function () {
+      $('transferPanel').classList.toggle('hidden');
+      $('adminErr').textContent = '';
+    });
+    $('btnTransferCancel').addEventListener('click', function () {
+      $('transferPanel').classList.add('hidden'); $('newAdminEmail').value = '';
+    });
+    $('btnTransfer').addEventListener('click', function () {
+      var em = $('newAdminEmail').value.trim();
+      if (!em) { $('adminErr').textContent = '请输入新管理员邮箱'; return; }
+      if (!confirm('把管理权限移交给 ' + em + '？\n\n所有课程、项目、提交记录会转到这个账号名下，你的账号将失去管理权限。')) return;
+      $('adminErr').textContent = '';
+      A.transferAdmin(em).then(function (r) {
+        if (r && r.ok === false) { $('adminErr').textContent = r.error || '移交失败'; return; }
+        toast('管理权限已移交给 ' + em);
+        setTimeout(function () { location.reload(); }, 1200);
+      }).catch(function (e) { $('adminErr').textContent = '移交失败：' + (e.message || e); });
     });
   }
 
@@ -343,6 +400,9 @@
       projs.forEach(function (p) { (pmap[p.course_id] = pmap[p.course_id] || []).push(p); });
       var box = $('courseList'); box.innerHTML = '';
       $('courseEmpty').classList.toggle('hidden', list.length > 0);
+      $('courseEmpty').textContent = state.isAdmin
+        ? '还没有课程。点「新建课程」定义你的第一张通用迁移表。'
+        : '你的账号不是管理员，目前也没有被邀请为协作人的课程。要让讲师把你加进某个项目的「协作人」，你才能看到那份内容。';
       list.forEach(function (c) {
         var rows = (c.framework || []).length;
         var mine = isMine(c);
@@ -397,6 +457,7 @@
   function renderCourse() {
     var c = state.course;
     var ro = !state.isOwner && !!c.id;
+    state.editingTpl = null;
 
     $('cTheme').value = c.theme || ''; $('cNeeds').value = c.needs || '';
 
@@ -417,17 +478,62 @@
   function renderTemplates() {
     var box = $('tplList'); if (!box) return;
     var tpls = state.course.templates || [];
+    var ro = !state.isOwner && !!state.course.id;
     box.innerHTML = '';
     $('tplEmpty').classList.toggle('hidden', tpls.length > 0);
     tpls.forEach(function (t, i) {
+      var tid = t.id || ('t' + i);
       var d = document.createElement('div'); d.className = 'fb';
-      d.innerHTML = '<div class="who"><span class="pill">' + esc(t.section || '行动') + '</span> &nbsp;' + esc(t.action || '') + '</div>' +
+      if (state.editingTpl === tid) {
+        d.innerHTML =
+          '<div class="tpl-edit">' +
+            '<label>掌握的新方法</label><input type="text" data-tf="section" value="' + esc(t.section) + '">' +
+            '<label>应用场景</label><input type="text" data-tf="scene" value="' + esc(t.scene) + '">' +
+            '<label>具体行动（学员做成了什么）</label><input type="text" data-tf="action" value="' + esc(t.action) + '">' +
+            '<label>结果与影响</label><input type="text" data-tf="resultImpact" value="' + esc(t.resultImpact) + '">' +
+            '<div style="display:flex;gap:8px;margin-top:10px">' +
+              '<button class="btn sm" data-tplsave="' + esc(tid) + '">保存修改</button>' +
+              '<button class="btn ghost sm" data-tplcancel="1">取消</button>' +
+            '</div><div class="error" id="tplErr_' + esc(tid) + '"></div>' +
+          '</div>';
+        box.appendChild(d);
+        d.querySelectorAll('[data-tplsave]').forEach(function (b) {
+          b.addEventListener('click', function () {
+            var patch = {};
+            d.querySelectorAll('[data-tf]').forEach(function (inp) { patch[inp.getAttribute('data-tf')] = inp.value.trim(); });
+            A.updateTemplate(state.course.id, tid, patch).then(function (c) {
+              state.course.templates = c.templates || [];
+              state.editingTpl = null; renderTemplates(); toast('范例已更新');
+            }).catch(function (e) {
+              var er = $('tplErr_' + tid); if (er) er.textContent = '保存失败：' + (e.message || e);
+            });
+          });
+        });
+        var cb = d.querySelector('[data-tplcancel]');
+        if (cb) cb.addEventListener('click', function () { state.editingTpl = null; renderTemplates(); });
+        return;
+      }
+      d.innerHTML = '<div class="tpl-head"><div class="who"><span class="pill">' + esc(t.section || '行动') + '</span> &nbsp;' + esc(t.action || '') + '</div>' +
+          (ro ? '' : '<div class="tpl-act"><button class="btn ghost sm" data-tpledit="' + esc(tid) + '">修改</button>' +
+            '<button class="btn ghost sm" data-tpldel="' + esc(tid) + '">删除</button></div>') +
+        '</div>' +
         '<div class="meta">场景：' + esc(t.scene || '—') + '</div>' +
         (t.resultImpact ? '<div style="margin-top:4px">' + esc(t.resultImpact) + '</div>' : '') +
-        '<div class="meta" style="margin-top:4px">范例来源：' + esc(t.source || '学员') + ' · ' + esc((t.createdAt || '').slice(0, 10)) + '</div>' +
+        '<div class="meta" style="margin-top:4px">范例来源：' + esc(t.source || '学员') + ' · ' + esc((t.createdAt || '').slice(0, 10)) +
+          (t.updatedAt ? ' · 已修订' : '') + '</div>' +
         '<div style="margin-top:8px"><button class="cmt-btn" data-cmt-kind="template" ' +
-          'data-cmt-ref="' + esc(t.id || ('t' + i)) + '" data-cmt-label="范例：' + esc(t.action || '未命名') + '"></button></div>';
+          'data-cmt-ref="' + esc(tid) + '" data-cmt-label="范例：' + esc(t.action || '未命名') + '"></button></div>';
       box.appendChild(d);
+      var eb = d.querySelector('[data-tpledit]');
+      if (eb) eb.addEventListener('click', function () { state.editingTpl = eb.getAttribute('data-tpledit'); renderTemplates(); });
+      var db = d.querySelector('[data-tpldel]');
+      if (db) db.addEventListener('click', function () {
+        if (!confirm('从模版库删除这条范例？\n删掉后不影响学员的原始提交，只是不再作为课程资产保留。')) return;
+        A.removeTemplate(state.course.id, db.getAttribute('data-tpldel')).then(function (c) {
+          state.course.templates = c.templates || [];
+          renderTemplates(); toast('已删除');
+        }).catch(function (e) { toast('删除失败：' + (e.message || e)); });
+      });
     });
     if (window.ALCM) window.ALCM.decorate(box);
   }
@@ -638,6 +744,7 @@
   function loadProjects(courseId) {
     A.listProjects(courseId).then(function (list) {
       var box = $('projList'); box.innerHTML = '';
+      var ro = !state.isOwner && !!state.course.id;
       $('projEmpty').classList.toggle('hidden', list.length > 0);
       list.forEach(function (p) {
         var n = (p.students || []).length;
@@ -652,11 +759,26 @@
           '<div style="margin-top:10px;display:flex;gap:8px;flex-wrap:wrap">' +
             '<button class="btn sm" data-links="' + p.id + '">打开项目</button>' +
             '<a class="btn ghost sm" href="review.html?pid=' + p.id + '">评价固化</a>' +
-            '<a class="btn ghost sm" href="report.html?pid=' + p.id + '">汇总报表</a></div>';
+            '<a class="btn ghost sm" href="report.html?pid=' + p.id + '">汇总报表</a>' +
+            (ro ? '' : '<button class="btn ghost sm" data-pdel="' + p.id + '" data-pname="' + esc(p.title || '未命名项目') + '">删除项目</button>') +
+          '</div>';
         box.appendChild(el);
       });
       box.querySelectorAll('[data-links]').forEach(function (b) {
         b.addEventListener('click', function () { openProject(b.getAttribute('data-links')); });
+      });
+      box.querySelectorAll('[data-pdel]').forEach(function (b) {
+        b.addEventListener('click', function () {
+          var pid = b.getAttribute('data-pdel'), nm = b.getAttribute('data-pname');
+          if (!confirm('删除「' + nm + '」？\n\n这个项目的学员提交、上司反馈、讲师评价、批注会一起删掉，无法恢复。\n只是不再交付这一期，建议先「汇总报表」导出留档。')) return;
+          if (!confirm('再确认一次：真的要删除「' + nm + '」以及全部提交记录？')) return;
+          b.disabled = true;
+          A.deleteProject(pid).then(function () {
+            toast('项目已删除'); loadProjects(state.course.id);
+          }).catch(function (e) {
+            b.disabled = false; toast('删除失败：' + (e.message || e));
+          });
+        });
       });
     });
   }

@@ -354,11 +354,14 @@
     if (!exArr.length) { toast('请先勾选至少一条范例'); return; }
     var courseId = state.project.course_id;
     var stName = (state.project.students.find(function (s) { return s.token === token; }) || {}).name || '学员';
-    var tasks = exArr.map(function (e) {
-      return A.appendTemplate(courseId, { id: A.uid('t'), section: e.section, action: e.action, scene: e.scene, resultImpact: e.resultImpact, quantActual: e.quantActual, target: e.target, source: stName, createdAt: new Date().toISOString() });
+    /* 一次写入整批，core 里按「方法+场景+行动」去重：同一条范例重复固化只更新内容，不堆重复卡片 */
+    var list = exArr.map(function (e) {
+      return { id: A.uid('t'), section: e.section, action: e.action, scene: e.scene,
+        resultImpact: e.resultImpact, quantActual: e.quantActual, target: e.target,
+        source: stName, createdAt: new Date().toISOString() };
     });
-    Promise.all(tasks).then(function () {
-      toast('已固化 ' + exArr.length + ' 条范例到该课程的「模版库」（工作台打开这门课程即可看到）');
+    A.appendTemplates(courseId, list).then(function () {
+      toast('已固化 ' + list.length + ' 条范例到该课程的「模版库」（工作台打开这门课程即可看到，可修改、可删除）');
     }).catch(function (e) { toast('固化失败：' + (e.message || e)); });
   }
 

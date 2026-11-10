@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>Action Leap · 一页纸（利益方使用逻辑与价值产出）</title>
+<style>
+:root{
+  --bg:#FBF3EA; --paper:#FFFDFA; --ink:#2A2320; --ink-2:#5B5049; --ink-3:#8C8078;
+  --line:#EADFD3; --coral:#FF7A4D; --coral-deep:#E45F32; --coral-soft:#FFEDE4;
+  --indigo:#4F46E5; --indigo-soft:#EEEDFD; --ok:#1E9E6A;
+  --r:20px; --shadow:0 14px 38px rgba(90,60,40,.12);
+  --font:-apple-system,BlinkMacSystemFont,"PingFang SC","Hiragino Sans GB","Microsoft YaHei","Noto Sans SC",sans-serif;
+}
+*{box-sizing:border-box;-webkit-print-color-adjust:exact;print-color-adjust:exact;}
+html,body{margin:0;padding:0;background:#EFE5DA;font-family:var(--font);color:var(--ink);line-height:1.5;-webkit-font-smoothing:antialiased;}
+.page{
+  width:794px;height:1123px;margin:24px auto;background:var(--bg);
+  border-radius:26px;box-shadow:var(--shadow);padding:48px 50px 40px;
+  display:flex;flex-direction:column;overflow:hidden;position:relative;
+}
+.eyebrow{font-size:11px;font-weight:800;letter-spacing:.2em;text-transform:uppercase;color:var(--coral-deep);margin:0 0 10px;}
+h1{font-size:33px;line-height:1.22;font-weight:800;margin:0 0 10px;letter-spacing:-.02em;}
+h1 em{font-style:normal;color:var(--coral-deep);}
+.lead{font-size:14px;color:var(--ink-2);margin:0 0 6px;max-width:640px;}
+.lead b{color:var(--ink);font-weight:700;}
+
+.rule{height:1px;background:var(--line);margin:16px 0 14px;}
+
+.sec{display:flex;align-items:baseline;gap:10px;margin:0 0 10px;}
+.sec h2{font-size:13px;font-weight:800;letter-spacing:.14em;color:var(--ink);margin:0;text-transform:uppercase;}
+.sec span{font-size:11.5px;color:var(--ink-3);}
+
+.people{display:grid;grid-template-columns:1fr 1fr;gap:9px;}
+.person{background:var(--paper);border:1px solid var(--line);border-radius:14px;padding:11px 13px;}
+.person .role{display:flex;align-items:center;gap:8px;margin-bottom:5px;}
+.person .no{
+  width:19px;height:19px;border-radius:6px;background:var(--coral-soft);color:var(--coral-deep);
+  font-size:11px;font-weight:800;display:flex;align-items:center;justify-content:center;flex-shrink:0;
+}
+.person .nm{font-size:13.5px;font-weight:800;}
+.person .tag{margin-left:auto;font-size:10px;font-weight:700;color:var(--indigo);background:var(--indigo-soft);border-radius:5px;padding:1px 6px;letter-spacing:.04em;}
+.person .ln{font-size:12px;color:var(--ink-2);line-height:1.45;}
+.person .ln b{color:var(--ink);font-weight:700;}
+.person .out{font-size:12px;color:var(--coral-deep);font-weight:700;margin-top:5px;line-height:1.4;}
+
+.chain{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;}
+.step{background:var(--paper);border:1px solid var(--line);border-radius:13px;padding:9px 11px;position:relative;}
+.step .n{font-size:10.5px;font-weight:800;color:var(--coral-deep);letter-spacing:.1em;}
+.step .t{font-size:12.5px;font-weight:800;margin:1px 0 3px;}
+.step .who{font-size:10.5px;color:var(--ink-3);font-weight:700;}
+.step .o{font-size:11.5px;color:var(--ink-2);line-height:1.4;margin-top:4px;}
+.step.span2{grid-column:span 2;}
+
+.formula{
+  margin-top:auto;background:linear-gradient(180deg,#FFF9F4,#FFEFE6);
+  border:1px solid #F6D9C8;border-radius:16px;padding:13px 16px;
+  display:flex;align-items:center;gap:14px;
+}
+.formula .lb{font-size:11px;font-weight:800;color:var(--coral-deep);letter-spacing:.14em;white-space:nowrap;}
+.formula .txt{font-size:13px;color:var(--ink);font-weight:600;line-height:1.45;}
+.formula .txt b{color:var(--coral-deep);}
+.foot{display:flex;align-items:center;justify-content:space-between;margin-top:12px;font-size:10.5px;color:var(--ink-3);}
+.foot b{color:var(--ink-2);letter-spacing:.04em;}
+
+@media print{
+  @page{size:A4 portrait;margin:0;}
+  body{background:#fff;}
+  .page{margin:0;border-radius:0;box-shadow:none;width:210mm;height:297mm;padding:14mm 13mm 11mm;}
+}
+</style>
+</head>
+<body>
+<div class="page">
+
+  <div class="eyebrow">ACTION LEAP · 一页纸</div>
+  <h1>培训结束到业绩发生之间，<br>那段<em>没人管的三周</em>，现在有人管了</h1>
+  <p class="lead">Action Leap 是一套<b>课后行动迁移系统</b>：把课上讲的方法，变成学员回到岗位后真正做完的几件事，并把过程变成<b>可核对、可汇报</b>的证据。它不替代任何课程，只接住课程交付之后那一棒。</p>
+
+  <div class="rule"></div>
+
+  <div class="sec"><h2>五个利益方</h2><span>每个人只做一件他最该做的事，重的活交给系统和 AI</span></div>
+  <div class="people">
+    <div class="person">
+      <div class="role"><span class="no">01</span><span class="nm">讲师 / 顾问</span><span class="tag">唯一管理员</span></div>
+      <div class="ln">建一次<b>课程母版</b>（一张通用迁移表），之后每个客户派发一个<b>项目</b>，母版复制一份给该项目、可随时为客户定制。</div>
+      <div class="out">产出：可复用组织资产 + 每期可交付的成果报告（续单依据）</div>
+    </div>
+    <div class="person">
+      <div class="role"><span class="no">02</span><span class="nm">甲方培训负责人</span><span class="tag">协作 · 只读</span></div>
+      <div class="ln">不需要逐个催人。打开项目就看得到四周进度走到哪、谁没交；有意见就在<b>任意位置留批注</b>，讲师在收件箱统一处理。</div>
+      <div class="out">产出：一场培训的<b>效果证明</b>，不再只是一场活动记录</div>
+    </div>
+    <div class="person">
+      <div class="role"><span class="no">03</span><span class="nm">业务领导</span><span class="tag">协作 · 只读</span></div>
+      <div class="ln">只看到自己业务线那个项目：下属回到岗位后到底做了什么、指标动了没有、上司怎么评的。</div>
+      <div class="out">产出：判断<b>该不该在本部门推广</b>的依据</div>
+    </div>
+    <div class="person">
+      <div class="role"><span class="no">04</span><span class="nm">学员</span><span class="tag">免登录</span></div>
+      <div class="ln">点开链接就填，不注册、不装 App。每条行动只补<b>结果与实际值</b>——大约 30 秒一件事。</div>
+      <div class="out">产出：学的东西第一次真正落在自己的活上，且被看见</div>
+    </div>
+    <div class="person span2" style="grid-column:span 2;display:flex;gap:14px;align-items:flex-start;">
+      <div style="flex:1">
+        <div class="role"><span class="no">05</span><span class="nm">直接上司</span><span class="tag">免登录</span></div>
+        <div class="ln">收到一条专属链接，看下属填的行动，给<b>三段反馈</b>：总体评价、具体建议、后续承诺。全程约 5 分钟，不必回忆课程内容。</div>
+      </div>
+      <div class="out" style="margin:0;max-width:250px">产出：辅导有抓手<br>——从「学得怎么样」变成「这条行动做了没有、差在哪、下一步怎么补」</div>
+    </div>
+  </div>
+
+  <div class="rule"></div>
+
+  <div class="sec"><h2>七步价值链</h2><span>每一环节都有明确产出物流向下一位</span></div>
+  <div class="chain">
+    <div class="step"><div class="n">STEP 1</div><div class="t">建课程母版</div><div class="who">讲师</div><div class="o">通用迁移表：方法 · 场景 · 行动 · 方向 · 指标</div></div>
+    <div class="step"><div class="n">STEP 2</div><div class="t">派发客户项目</div><div class="who">讲师</div><div class="o">母版副本 + 名单 + 令牌链接（20 人一次粘贴）</div></div>
+    <div class="step"><div class="n">STEP 3</div><div class="t">学员填写</div><div class="who">学员 · 第 1 周</div><div class="o">真实场景下的行动 + 量化基线</div></div>
+    <div class="step"><div class="n">STEP 4</div><div class="t">上司反馈</div><div class="who">上司 · 第 2 周</div><div class="o">三段式意见落到每条行动上</div></div>
+    <div class="step"><div class="n">STEP 5</div><div class="t">学员提交结果</div><div class="who">学员 · 第 3 周</div><div class="o">结果 + 实际值，形成可核对证据</div></div>
+    <div class="step"><div class="n">STEP 6</div><div class="t">讲师评价</div><div class="who">讲师 · 第 4 周</div><div class="o">A / B / C 分级 + 逐条点评 + 选范例</div></div>
+    <div class="step span2"><div class="n">STEP 7</div><div class="t">汇总报表与复盘萃取</div><div class="who">讲师 + 培训负责人</div><div class="o">一页纸成果报告（可打印归档）+ 复盘把优秀做法固化成下一期的起点；范例进课程模版库，项目越多母版越强</div></div>
+  </div>
+
+  <div class="formula">
+    <div class="lb">价值公式</div>
+    <div class="txt">课上<b>听懂</b> → 回岗<b>做完</b> → 上司<b>确认</b> → 指标<b>留下数字</b> → 组织<b>留下方法</b>。培训从「花了多少钱」变成「换回了什么」。</div>
+  </div>
+
+  <div class="foot">
+    <span><b>Action Leap</b> · 课后行动迁移系统</span>
+    <span>讲师建母版 · 客户开项目 · 学员填结果 · 上司给反馈 · 系统出报告</span>
+  </div>
+
+</div>
+</body>
+</html>

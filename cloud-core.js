@@ -77,9 +77,15 @@
     return getCloud().database.from('courses').insert(payload)
       .select().single().then(function (r) { if (r.error) throw r.error; return r.data; });
   }
+  /* 删除课程 = 连同它下面所有项目一起删（子表：提交、反馈、评价、批注）
+   * 用 SECURITY DEFINER 函数在数据库端一次做完，避免前端逐表删被外键卡住。 */
   function deleteCourse(id) {
-    return getCloud().database.from('courses').delete().eq('id', id)
-      .then(function (r) { if (r.error) throw r.error; });
+    return getCloud().database.rpc('delete_course', { p_id: id })
+      .then(function (r) {
+        if (r.error) throw r.error;
+        if (r.data && r.data.ok === false) throw new Error(r.data.error === 'forbidden' ? '只有创建者可以删除课程' : '课程不存在');
+        return true;
+      });
   }
 
   /* ---------------- 项目实例（创建者所有） ---------------- */
@@ -110,9 +116,15 @@
     return getCloud().database.from('projects').insert(payload)
       .select().single().then(function (r) { if (r.error) throw r.error; return r.data; });
   }
+  /* 删除项目 = 连同它的学员提交、上司反馈、讲师评价、批注一起删。
+   * 同样走数据库函数，外键是 NO ACTION，前端逐表删会被卡住。 */
   function deleteProject(id) {
-    return getCloud().database.from('projects').delete().eq('id', id)
-      .then(function (r) { if (r.error) throw r.error; });
+    return getCloud().database.rpc('delete_project', { p_id: id })
+      .then(function (r) {
+        if (r.error) throw r.error;
+        if (r.data && r.data.ok === false) throw new Error(r.data.error === 'forbidden' ? '只有创建者可以删除项目' : '项目不存在');
+        return true;
+      });
   }
 
   /* 时间线（4 阶段）与复盘萃取 */
@@ -225,22 +237,76 @@
       rating: review.rating, comment: review.comment, exemplar: review.exemplar
     }).select().single().then(function (r) { if (r.error) throw r.error; return r.data; });
   }
-  function appendTemplate(courseId, template) {
+  /* ---------------- 课程模版库（组织资产，可增删改） ----------------
+   * 同一门课里「方法 + 场景 + 行动」相同的范例视为同一条：再次固化只更新内容，
+   * 不重复堆一张卡（旧版是 push，重复点会堆出一串一模一样的卡片）。
+   * 写入一律整表覆盖，避免多条并发 read-modify-write 互相吞掉。
+   * ------------------------------------------------------------ */
+  function templateKey(t) {
+    return [t.section, t.action, t.scene].map(function (s) {
+      return String(s || '').replace(/\s+/g, '').toLowerCase();
+    }).join('|');
+  }
+  function saveTemplates(courseId, list) {
+    return getCloud().database.from('courses').update({ templates: list || [] })
+      .eq('id', courseId).select().single()
+      .then(function (r) { if (r.error) throw r.error; return r.data; });
+  }
+  function appendTemplates(courseId, incoming) {
     return getCourse(courseId).then(function (course) {
-      var templates = course.templates || [];
-      templates.push(template);
-      return getCloud().database.from('courses').update({ templates: templates })
-        .eq('id', courseId).select().single()
-        .then(function (r) { if (r.error) throw r.error; return r.data; });
+      var list = (course.templates || []).slice();
+      var idx = {};
+      list.forEach(function (t, i) { idx[templateKey(t)] = i; });
+      (incoming || []).forEach(function (t) {
+        var k = templateKey(t);
+        if (idx[k] !== undefined && idx[k] !== null) {
+          var old = list[idx[k]];
+          list[idx[k]] = Object.assign({}, old, {
+            section: t.section || old.section, action: t.action || old.action,
+            scene: t.scene || old.scene, target: t.target || old.target,
+            resultImpact: t.resultImpact || old.resultImpact,
+            quantActual: t.quantActual || old.quantActual,
+            source: t.source || old.source,
+            updatedAt: new Date().toISOString()
+          });
+        } else {
+          idx[k] = list.length;
+          list.push(t);
+        }
+      });
+      return saveTemplates(courseId, list);
     });
   }
+  function updateTemplate(courseId, templateId, patch) {
+    return getCourse(courseId).then(function (course) {
+      var list = (course.templates || []).map(function (t) {
+        return (t.id === templateId) ? Object.assign({}, t, patch, { updatedAt: new Date().toISOString() }) : t;
+      });
+      return saveTemplates(courseId, list);
+    });
+  }
+  function removeTemplate(courseId, templateId) {
+    return getCourse(courseId).then(function (course) {
+      var list = (course.templates || []).filter(function (t) { return t.id !== templateId; });
+      return saveTemplates(courseId, list);
+    });
+  }
+  function appendTemplate(courseId, template) { return appendTemplates(courseId, [template]); }
 
-  /* ---------------- 当前登录身份（uid + email） ---------------- */
+  /* ---------------- 当前登录身份（uid + email + 是否管理员） ---------------- */
   function whoami() {
     return getCloud().database.rpc('whoami')
       .then(function (r) {
         if (r.error) throw r.error;
-        return r.data || { uid: '', email: '' };
+        return r.data || { uid: '', email: '', isAdmin: false };
+      });
+  }
+  /* 移交管理权限：数据库端校验调用者是不是当前管理员，并把全部数据换到新账号名下 */
+  function transferAdmin(email) {
+    return getCloud().database.rpc('transfer_admin', { p_new_email: email })
+      .then(function (r) {
+        if (r.error) throw r.error;
+        return r.data || { ok: false, error: '移交失败' };
       });
   }
 
@@ -369,7 +435,9 @@
     getSubmissionForSup: getSubmissionForSup, saveSupFeedback: saveSupFeedback,
     getSubmissions: getSubmissions, getFeedback: getFeedback, getReviews: getReviews,
     saveReview: saveReview, appendTemplate: appendTemplate,
-    whoami: whoami,
+    appendTemplates: appendTemplates, saveTemplates: saveTemplates,
+    updateTemplate: updateTemplate, removeTemplate: removeTemplate,
+    whoami: whoami, transferAdmin: transferAdmin,
     listCollaborators: listCollaborators, addCollaborator: addCollaborator, removeCollaborator: removeCollaborator,
     saveProjectRows: saveProjectRows,
     listComments: listComments, listOpenComments: listOpenComments, addComment: addComment,

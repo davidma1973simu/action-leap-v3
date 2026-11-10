@@ -205,3 +205,10 @@ table.one .idx { color: var(--ink-faint); width: 30px; text-align: center; }
   .cmt-btn, .cmt-mask { display: none !important; }
 }
 
+
+/* 课程模版库：可修改 / 可删除 */
+.tpl-head { display: flex; align-items: flex-start; gap: 10px; }
+.tpl-head .who { flex: 1; min-width: 0; }
+.tpl-act { display: flex; gap: 6px; flex-shrink: 0; }
+.tpl-edit label { display: block; font-size: 12px; color: var(--ink-soft); margin: 8px 0 4px; font-weight: 600; }
+.tpl-edit input[type="text"] { width: 100%; }
